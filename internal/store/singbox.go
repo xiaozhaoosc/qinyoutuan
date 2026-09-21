@@ -849,6 +849,11 @@ func argoVariantLinks(base singbox.LinkParams, argoHost, mode string) []singbox.
 		v.PublicKey = ""
 		v.ShortID = ""
 		v.Flow = false
+		// 直连入站若是 raw TCP（标准 Reality），argo 变体仍需 ws 传输走隧道，
+		// 回源入站固定 path=/ws（见 argoOriginInbound），订阅变体必须一致。
+		if v.Path == "" {
+			v.Path = "/ws"
+		}
 		if cp.tls {
 			v.SNI = argoHost
 			v.Insecure = false
