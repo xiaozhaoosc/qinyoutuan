@@ -5,7 +5,7 @@
       <div class="sidebar-brand" @click="router.push('/')">
         <div class="sidebar-logo"><BrandMark :size="40" /></div>
         <div class="brand-copy">
-          <span class="brand-text">{{ config.config.site_name || '轻舟' }}</span>
+          <span class="brand-text">{{ config.config.site_name || '亲友团' }}</span>
           <span class="brand-caption">服务控制台</span>
         </div>
       </div>
@@ -20,7 +20,7 @@
         <div class="sidebar-brand" @click="goAndClose('/')">
           <div class="sidebar-logo"><BrandMark :size="40" /></div>
           <div class="brand-copy">
-            <span class="brand-text">{{ config.config.site_name || '轻舟' }}</span>
+            <span class="brand-text">{{ config.config.site_name || '亲友团' }}</span>
             <span class="brand-caption">服务控制台</span>
           </div>
         </div>
@@ -192,7 +192,7 @@ const titleMap: Record<string, string> = {
   '/admin/settings': '系统设置', '/admin/reg-codes': '注册码', '/admin/api-tokens': 'API Token', '/admin/announcements': '公告管理', '/admin/manual-notifications': '手动通知', '/admin/help': '帮助文档',
   '/admin/update': '在线更新',
 }
-const currentTitle = computed(() => titleMap[route.path] || config.config.site_name || '轻舟')
+const currentTitle = computed(() => titleMap[route.path] || config.config.site_name || '亲友团')
 
 const searchItems = computed(() => {
   const items = [

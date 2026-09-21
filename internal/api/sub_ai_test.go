@@ -47,14 +47,14 @@ func TestSubscriptionAIRouteUsesOnlyAccessibleAIMembership(t *testing.T) {
 		}
 		return w.Body.String()
 	}
-	if body := get(); strings.Contains(body, "qingzhou-ai") {
+	if body := get(); strings.Contains(body, "qinyoutuan-ai") {
 		t.Fatal("an inaccessible AI group marked an otherwise accessible node")
 	}
 	if err := st.UpdateGroup(store.NodeGroup{ID: ordinary, Name: "可访问", IsAI: true}); err != nil {
 		t.Fatal(err)
 	}
 	a.invalidateLinks(uid)
-	if body := get(); !strings.Contains(body, "qingzhou-ai") || !strings.Contains(body, "★ AI 节点") {
+	if body := get(); !strings.Contains(body, "qinyoutuan-ai") || !strings.Contains(body, "★ AI 节点") {
 		t.Fatal("accessible AI marker did not reach the rendered subscription")
 	}
 }

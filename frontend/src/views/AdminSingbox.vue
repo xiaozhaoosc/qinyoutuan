@@ -129,6 +129,7 @@
                     <span class="kv">用户 <b>{{ r.user_count ?? 0 }}</b></span>
                     <span class="kv">TLS <b :title="tlsName(r.tls_id)">{{ tlsName(r.tls_id) }}</b></span>
                     <span v-if="r.egress_id" class="kv">出口 <b :title="egressName(r.egress_id)">{{ egressName(r.egress_id) }}</b></span>
+                    <span v-if="r.argo_enabled" class="kv">Argo <b>{{ r.argo_host || (r.argo_mode === 'fixed' ? r.argo_domain : '…') }}</b></span>
                   </div>
                   <div class="lc-foot">
                     <n-button size="tiny" @click="openInbound(r)">编辑</n-button>
@@ -600,6 +601,28 @@
                 <template v-if="selectedEgressType === 'http'">HTTP 出口只能这样——sing-box 的 http 出站没有 UDP 通路。若本入站需要 UDP，请改选 <b>SOCKS5</b> 出口。</template>
                 <template v-else>要放开可在「代理出口」页把该出口改成「透传」——前提是供应商真的中转 UDP，半通比不通更糟。</template>
               </n-alert>
+            </div>
+          </n-form-item>
+          <n-form-item v-if="ie.type === 'vmess'" label="Argo 隧道">
+            <div style="width:100%;">
+              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                <span>挂 Cloudflare 隧道（CDN 前置，落地 IP 被墙仍可用）</span>
+                <n-switch v-model:value="ie.argo_enabled" />
+              </div>
+              <template v-if="ie.argo_enabled">
+                <n-select v-model:value="ie.argo_mode" style="margin-top:8px;" placeholder="选择隧道模式" :options="[
+                  {label:'临时隧道（免 token，重启会换域名）', value:'temporary'},
+                  {label:'固定隧道（需 token + 域名）', value:'fixed'}
+                ]" />
+                <template v-if="ie.argo_mode === 'fixed'">
+                  <n-input v-model:value="ie.argo_auth" style="margin-top:8px;" type="password" show-password-on="click" placeholder="固定隧道 token（库内加密存储）" />
+                  <n-input v-model:value="ie.argo_domain" style="margin-top:8px;" placeholder="固定隧道域名，如 t.example.com" />
+                </template>
+                <div v-if="ie.argo_host" style="margin-top:8px;">
+                  <n-tag type="success" size="small">当前隧道域名：{{ ie.argo_host }}</n-tag>
+                </div>
+              </template>
+              <div class="form-tip">仅 vmess(ws) 入站支持。启用后订阅会额外下发 13 个 CDN 端口节点（80 / 443 系），客户端连 CDN 边缘即可，无需直连落地 IP；固定隧道需先在 Cloudflare 侧创建 tunnel 并取得 token 与域名。需在落地机/本机安装 cloudflared（install-singbox.sh 加 --with-argo）。</div>
             </div>
           </n-form-item>
           <n-form-item v-if="ie.type !== 'shadowsocks'" label="TLS / Reality"><n-select v-model:value="ie.tls_id" :options="tlsOpts" v-bind="longSelFor(tlsOpts.length)" placeholder="无" clearable /></n-form-item>
@@ -1490,6 +1513,7 @@ const ie = reactive({
   ss_method: '2022-blake3-aes-128-gcm', flow: 'xtls-rprx-vision',
   anytls_idle_check: 0, anytls_idle_timeout: 0, anytls_min_idle: 0,
   mux: false, brutal: false, brutal_up: 0, brutal_down: 0, upstream_inbound_id: 0, egress_id: 0,
+  argo_enabled: false, argo_mode: '', argo_auth: '', argo_domain: '', argo_host: '',
 })
 
 function resetIe() {
@@ -1501,6 +1525,7 @@ function resetIe() {
     ss_method: '2022-blake3-aes-128-gcm', flow: 'xtls-rprx-vision',
     anytls_idle_check: 0, anytls_idle_timeout: 0, anytls_min_idle: 0,
     mux: false, brutal: false, brutal_up: 0, brutal_down: 0, upstream_inbound_id: 0, egress_id: 0,
+    argo_enabled: false, argo_mode: '', argo_auth: '', argo_domain: '', argo_host: '',
   })
 }
 
@@ -1525,6 +1550,7 @@ function openInbound(n?: any, clone = false) {
       anytls_idle_check: o.idle_session_check_interval || 0, anytls_idle_timeout: o.idle_session_timeout || 0, anytls_min_idle: o.min_idle_session || 0,
       mux: !!mx.enabled, brutal: !!br.enabled, brutal_up: br.up_mbps || 0, brutal_down: br.down_mbps || 0,
       upstream_inbound_id: n.upstream_inbound_id || 0, egress_id: n.egress_id || 0,
+      argo_enabled: !!n.argo_enabled, argo_mode: n.argo_mode || '', argo_auth: n.argo_auth || '', argo_domain: n.argo_domain || '', argo_host: n.argo_host || '',
     })
   } else {
     resetIe()
@@ -1604,7 +1630,7 @@ async function saveInbound() {
       }
       if (ie.mux) { o.multiplex = { enabled: true }; if (ie.brutal) o.multiplex.brutal = { enabled: true, up_mbps: ie.brutal_up, down_mbps: ie.brutal_down } }
     }
-    const body = { type: ie.type, tag: ie.tag, listen: ie.listen || '::', listen_port: ie.listen_port, tls_id: ie.type === 'shadowsocks' ? 0 : (ie.tls_id || 0), server_id: ie.server_id || 0, enabled: ie.enabled, upstream_inbound_id: ie.upstream_inbound_id || 0, egress_id: ie.egress_id || 0, options: JSON.stringify(o) }
+    const body = { type: ie.type, tag: ie.tag, listen: ie.listen || '::', listen_port: ie.listen_port, tls_id: ie.type === 'shadowsocks' ? 0 : (ie.tls_id || 0), server_id: ie.server_id || 0, enabled: ie.enabled, upstream_inbound_id: ie.upstream_inbound_id || 0, egress_id: ie.egress_id || 0, argo_enabled: ie.argo_enabled, argo_mode: ie.argo_enabled ? (ie.argo_mode || 'temporary') : '', argo_auth: ie.argo_auth || '', argo_domain: ie.argo_domain || '', options: JSON.stringify(o) }
     const fn = ie.id ? apiPut : apiPost
     const url = ie.id ? '/api/admin/sb/inbounds/' + ie.id : '/api/admin/sb/inbounds'
     const created = await fn(url, body)

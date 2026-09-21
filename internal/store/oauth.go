@@ -52,8 +52,8 @@ func (s *Store) ConsumeOAuthState(ctx context.Context, stateHash, browserHash st
 	return v, nil
 }
 
-var ErrOAuthEmailExists = errors.New("邮箱已有轻舟账号，请先使用原账号登录，再到个人中心绑定认证中心")
-var ErrOAuthSignupClosed = errors.New("该认证中心账号尚未绑定，请先注册轻舟账号并在个人中心绑定")
+var ErrOAuthEmailExists = errors.New("邮箱已有亲友团账号，请先使用原账号登录，再到个人中心绑定认证中心")
+var ErrOAuthSignupClosed = errors.New("该认证中心账号尚未绑定，请先注册亲友团账号并在个人中心绑定")
 
 type OAuthIdentity struct {
 	Issuer      string `json:"issuer"`
@@ -137,7 +137,7 @@ func (s *Store) BindOAuthIdentity(ctx context.Context, userID int64, issuer, sub
 		return nil
 	}
 	if err == nil {
-		return fmt.Errorf("此认证中心账号已绑定其他轻舟账号")
+		return fmt.Errorf("此认证中心账号已绑定其他亲友团账号")
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err

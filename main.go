@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -106,6 +108,7 @@ func main() {
 	app.StartMonitorTasks(ctx)
 	app.StartHostedProbeSync(ctx)
 	app.StartCertRenew(ctx, 12*time.Hour)
+	startLocalArgoSync(ctx, st, &bgWG)
 	// Tracked in bgWG for the same reason the controller is: it opens write
 	// transactions, so shutdown must let an in-flight sweep finish before the
 	// deferred st.Close() runs.
@@ -121,7 +124,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("qingzhou listening on http://%s", cfg.ListenAddr)
+		log.Printf("qinyoutuan listening on http://%s", cfg.ListenAddr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", err)
 		}
@@ -170,7 +173,7 @@ func buildMailer(st *store.Store) *mailer.Mailer {
 		User:     get("QZ_SMTP_USER", "smtp_user"),
 		Pass:     get("QZ_SMTP_PASS", "smtp_pass"),
 		From:     from,
-		FromName: firstNonEmpty(get("QZ_SMTP_FROM_NAME", "smtp_from_name"), "轻舟"),
+		FromName: firstNonEmpty(get("QZ_SMTP_FROM_NAME", "smtp_from_name"), "亲友团"),
 		Security: get("QZ_SMTP_SECURITY", "smtp_security"),
 	}
 }
@@ -215,6 +218,98 @@ func buildSbController(st *store.Store, app *api.API, sshKeyDir string) *sbctl.C
 	ctrl.SetRestartObserver(app.NodeRestarted)
 	ctrl.SetRestartCircuit(app.RestartCircuitPolicy, app.RestartCircuitOpen, app.NodeCircuitChanged)
 	return ctrl
+}
+
+// startLocalArgoSync keeps the panel host's own argo (Cloudflare Tunnel)
+// cloudflared units in step with the enabled argo inbounds that live on this
+// machine (server_id 0). Runs on a timer, mirroring the other Start*Sync loops:
+// systemd restarts the tunnel when it dies; this loop only rewrites the unit
+// when the desired args changed and records the ephemeral quick-tunnel hostname
+// so BuildSelfBuiltLinks can emit the 13-port CDN links. Argo tunnels on REMOTE
+// servers are stage E (delivered over sshctl) and deliberately skipped here.
+func startLocalArgoSync(ctx context.Context, st *store.Store, bg *sync.WaitGroup) {
+	bg.Add(1)
+	go func() {
+		defer bg.Done()
+		bin := sbproc.FindCloudflaredBin()
+		unitDir := envOrSet("QZ_ARGO_UNIT_DIR", "/etc/systemd/system")
+		logDir := envOrSet("QZ_ARGO_LOGFILE_DIR", "/etc/cloudflared")
+		reconcileLocalArgo(ctx, st, bin, unitDir, logDir)
+		t := time.NewTicker(2 * time.Minute)
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				// Cloudflared may be installed after the panel boots (--with-argo);
+				// re-detect each pass so we pick it up without a restart.
+				reconcileLocalArgo(ctx, st, sbproc.FindCloudflaredBin(), unitDir, logDir)
+			}
+		}
+	}()
+}
+
+// reconcileLocalArgo applies the desired cloudflared systemd unit for every
+// enabled argo inbound on the panel's own machine. bin == "" (cloudflared not
+// installed) is a silent no-op: there is nothing to supervise yet.
+func reconcileLocalArgo(ctx context.Context, st *store.Store, bin, unitDir, logDir string) {
+	if bin == "" {
+		return
+	}
+	ibs, err := st.ListSbInbounds()
+	if err != nil {
+		log.Printf("argo sync: ListSbInbounds: %v", err)
+		return
+	}
+	for _, ib := range ibs {
+		if !ib.Enabled || !ib.ArgoEnabled || ib.ArgoMode == "" {
+			continue
+		}
+		if ib.ServerID != 0 {
+			// Remote-hosted argo is stage E (sshctl). Leave a clear breadcrumb so
+			// nobody mistakes "nothing happened here" for "argo is unsupported".
+			if sbproc.ArgoHost(ib.Tag) == "" {
+				log.Printf("argo sync: inbound %s is on server %d — remote argo tunnels not yet wired (stage E)", ib.Tag, ib.ServerID)
+			}
+			continue
+		}
+		spec := sbproc.ArgoSpec{
+			Mode:       ib.ArgoMode,
+			Auth:       ib.ArgoAuth,
+			Domain:     ib.ArgoDomain,
+			TargetPort: ib.ListenPort,
+		}
+		tag := safeFile(ib.Tag)
+		unitPath := filepath.Join(unitDir, "cloudflared-"+tag+".service")
+		logfile := filepath.Join(logDir, tag+".log")
+		if _, changed, err := sbproc.EnsureLocalArgo(ctx, spec, ib.Tag, bin, unitPath, logfile); err != nil {
+			log.Printf("argo sync: inbound %s: %v", ib.Tag, err)
+		} else if changed {
+			log.Printf("argo sync: updated cloudflared unit for inbound %s", ib.Tag)
+		}
+	}
+}
+
+// safeFile makes an inbound tag safe to embed in a file name.
+func safeFile(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('_')
+		}
+	}
+	return b.String()
+}
+
+// envOrSet reads an env var, falling back to def when empty.
+func envOrSet(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }
 
 func firstNonEmpty(a, b string) string {

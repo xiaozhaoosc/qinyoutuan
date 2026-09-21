@@ -41,7 +41,7 @@ func TestSignToolInteropWithVerifier(t *testing.T) {
 		t.Fatalf("could not parse keys from:\n%s", out)
 	}
 
-	asset := filepath.Join(dir, "qingzhou-linux-amd64")
+	asset := filepath.Join(dir, "qinyoutuan-linux-amd64")
 	if err := os.WriteFile(asset, []byte("pretend release binary"), 0o755); err != nil {
 		t.Fatal(err)
 	}

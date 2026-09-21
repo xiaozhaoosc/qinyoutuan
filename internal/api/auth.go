@@ -96,7 +96,7 @@ func (a *API) handleConfig(w http.ResponseWriter, r *http.Request) {
 	mode := a.registerMode()
 	siteName, _ := a.st.GetSetting("site_name")
 	if siteName == "" {
-		siteName = "轻舟"
+		siteName = "亲友团"
 	}
 	siteDesc, _ := a.st.GetSetting("site_description")
 	homeMode, _ := a.st.GetSetting("homepage_mode")

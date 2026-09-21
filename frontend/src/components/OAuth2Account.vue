@@ -3,8 +3,8 @@
     <n-alert v-if="error" type="error">{{ error }}</n-alert>
     <n-tag v-if="state.bound" type="success">已绑定，可使用认证中心登录此账号</n-tag>
     <n-form v-else-if="state.enabled" label-placement="top" style="max-width: 420px" @submit.prevent="bind">
-      <p>绑定后可通过认证中心登录当前轻舟账号。请输入当前轻舟密码，再前往认证中心授权。</p>
-      <n-form-item label="当前轻舟密码"><n-input v-model:value="password" type="password" show-password-on="click" :input-props="{ autocomplete: 'current-password' }" /></n-form-item>
+      <p>绑定后可通过认证中心登录当前亲友团账号。请输入当前亲友团密码，再前往认证中心授权。</p>
+      <n-form-item label="当前亲友团密码"><n-input v-model:value="password" type="password" show-password-on="click" :input-props="{ autocomplete: 'current-password' }" /></n-form-item>
       <n-button type="primary" :disabled="!password" :loading="busy" @click="bind">前往认证中心绑定</n-button>
     </n-form>
   </n-card>

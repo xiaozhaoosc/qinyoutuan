@@ -306,7 +306,7 @@ func Issue(ctx context.Context, r Runner, o IssueOpts) (*IssueResult, error) {
 }
 
 // ReadPEM returns the contents of the installed fullchain and key files via the
-// runner. 轻舟 stores these bytes in the DB (encrypted) rather than pointing
+// runner. 亲友团 stores these bytes in the DB (encrypted) rather than pointing
 // sing-box at the files, so a certificate issued on the panel host can be pushed
 // to any node — including a remote one that never ran acme.sh.
 func ReadPEM(ctx context.Context, r Runner, res *IssueResult) (certPEM, keyPEM string, err error) {

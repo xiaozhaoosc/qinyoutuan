@@ -1,9 +1,9 @@
 ---
 name: verify
-description: Build and run 轻舟 (qingzhou) locally to observe a change end-to-end — boot the Go binary against a throwaway SQLite DB, drive the HTTP API and the Vue admin/user UI.
+description: Build and run 亲友团 (qinyoutuan) locally to observe a change end-to-end — boot the Go binary against a throwaway SQLite DB, drive the HTTP API and the Vue admin/user UI.
 ---
 
-# Verifying qingzhou
+# Verifying qinyoutuan
 
 Single Go binary serving a JSON API + an embedded Vue frontend, backed by SQLite.
 The surface is **HTTP** (and the browser UI it serves).
@@ -25,7 +25,7 @@ compile time, so a stale binary serves stale UI.
 
 ## Run
 
-Everything is env-configurable, so never touch the real `qingzhou.db`:
+Everything is env-configurable, so never touch the real `qinyoutuan.db`:
 
 ```bash
 QZ_LISTEN=127.0.0.1:8099 \

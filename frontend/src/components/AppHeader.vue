@@ -2,7 +2,7 @@
   <header class="app-header">
     <div class="header-left" @click="router.push('/')">
       <div class="logo"><BrandMark :size="38" /></div>
-      <span class="brand-name">{{ config.config.site_name || '轻舟' }}</span>
+      <span class="brand-name">{{ config.config.site_name || '亲友团' }}</span>
     </div>
     <div class="header-right">
       <template v-if="auth.isLoggedIn">

@@ -1,7 +1,7 @@
 // Package sbstats reads per-user traffic from sing-box's v2ray_api gRPC
 // StatsService (B2 integration model). It speaks gRPC-over-h2c by hand (just
 // x/net/http2 + a tiny hand-rolled protobuf codec for the two messages we
-// need) so 轻舟 takes neither a grpc-go dependency nor any sing-box import —
+// need) so 亲友团 takes neither a grpc-go dependency nor any sing-box import —
 // keeping the binary lean and the license independent.
 //
 // sing-box tracks per-user counters named:
@@ -10,7 +10,7 @@
 //	user>>>NAME>>>traffic>>>downlink
 //
 // We QueryStats with reset=true, so each poll returns the DELTA since the last
-// poll and zeroes the counter — 轻舟 just accumulates the deltas into each
+// poll and zeroes the counter — 亲友团 just accumulates the deltas into each
 // user's usage (counters also reset whenever sing-box restarts).
 package sbstats
 

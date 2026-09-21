@@ -35,9 +35,9 @@ import (
 const DefaultRepo = "mllt992/qing-zhou"
 
 // assetName is the release asset this binary knows how to install for the
-// current OS/arch, e.g. "qingzhou-linux-amd64".
+// current OS/arch, e.g. "qinyoutuan-linux-amd64".
 func assetName() string {
-	return fmt.Sprintf("qingzhou-%s-%s", runtime.GOOS, runtime.GOARCH)
+	return fmt.Sprintf("qinyoutuan-%s-%s", runtime.GOOS, runtime.GOARCH)
 }
 
 func probeAssetName(arch string) string {
@@ -158,7 +158,7 @@ func (m *Manager) newRequest(ctx context.Context, url string) (*http.Request, er
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "qingzhou-updater")
+	req.Header.Set("User-Agent", "qinyoutuan-updater")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 	if tok := strings.TrimSpace(m.tokenFn()); tok != "" {
 		req.Header.Set("Authorization", "Bearer "+tok)

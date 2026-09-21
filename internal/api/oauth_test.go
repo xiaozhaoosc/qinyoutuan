@@ -104,7 +104,7 @@ func newOAuthFixture(t *testing.T) *oauthFixture {
 	}))
 	t.Cleanup(f.server.Close)
 	a.sourceClient = f.server.Client()
-	f.c = oauthConfig{Enabled: true, Name: "认证中心", Issuer: f.server.URL, ClientID: "qingzhou", ClientSecret: "client-secret", RedirectURL: "https://panel.example/api/auth/oauth2/callback", AutoRegister: true}
+	f.c = oauthConfig{Enabled: true, Name: "认证中心", Issuer: f.server.URL, ClientID: "qinyoutuan", ClientSecret: "client-secret", RedirectURL: "https://panel.example/api/auth/oauth2/callback", AutoRegister: true}
 	f.save(t)
 	st.SetSetting("register_mode", "open")
 	st.SetSetting("email_verify_required", "1")

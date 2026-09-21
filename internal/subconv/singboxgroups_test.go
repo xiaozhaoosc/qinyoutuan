@@ -137,7 +137,7 @@ func TestSingboxAIRouteIsAutomaticAndOrderedAfterSniff(t *testing.T) {
 	}
 	found := false
 	for _, rs := range mapSlice(route["rule_set"]) {
-		if rs["tag"] == "qingzhou-ai" && rs["url"] == singboxAIRuleURL {
+		if rs["tag"] == "qinyoutuan-ai" && rs["url"] == singboxAIRuleURL {
 			found = true
 		}
 	}

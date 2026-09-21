@@ -1,5 +1,5 @@
-/qingzhou
-/qingzhou.exe
+/qinyoutuan
+/qinyoutuan.exe
 *.exe
 *.exe~
 *~
@@ -7,8 +7,8 @@
 *.db-shm
 *.db-wal
 /dist/
-/qingzhou-linux-*
-/qingzhou.new
+/qinyoutuan-linux-*
+/qinyoutuan.new
 SHA256SUMS.txt
 /cmd/probe/dist/
 
@@ -21,3 +21,5 @@ SHA256SUMS.txt
 !/frontend/dist/.gitkeep
 # TypeScript incremental build cache — a build artifact, must not be tracked.
 /frontend/tsconfig.tsbuildinfo
+# Local SSH keys / scratch (Oracle server access). Never commit credentials.
+/oracle/

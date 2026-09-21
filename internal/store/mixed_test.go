@@ -10,7 +10,7 @@ import (
 
 // A mixed (HTTP/SOCKS5) inbound must render into the server config with its
 // per-user username/password and have that username tracked in v2ray_api stats,
-// or 轻舟 can't meter the proxy's traffic per user (users would bypass quota).
+// or 亲友团 can't meter the proxy's traffic per user (users would bypass quota).
 func TestMixedInboundConfig(t *testing.T) {
 	st, err := Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {

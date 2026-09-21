@@ -11,7 +11,7 @@ func TestRenderMarksAIByExactAccessibleLink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(body, "RULE-SET,qingzhou-ai,"+grpAIClash) {
+	if !strings.Contains(body, "RULE-SET,qinyoutuan-ai,"+grpAIClash) {
 		t.Fatal("AI marker did not reach the native renderer")
 	}
 }
@@ -43,10 +43,10 @@ func TestNoAIMarkerProducesNoAIRouteOrGroup(t *testing.T) {
 	if groupByName(clash, grpAIClash) != nil {
 		t.Fatal("Clash emitted an empty AI group")
 	}
-	if providers, _ := clash["rule-providers"].(map[string]any); providers["qingzhou-ai"] != nil {
+	if providers, _ := clash["rule-providers"].(map[string]any); providers["qinyoutuan-ai"] != nil {
 		t.Fatal("Clash emitted an unused AI rule provider")
 	}
-	if strings.Contains(Surge(ParseLinks(nodeLinks()), ""), "qingzhou-ai") {
+	if strings.Contains(Surge(ParseLinks(nodeLinks()), ""), "qinyoutuan-ai") {
 		t.Fatal("Surge emitted an unused AI rule")
 	}
 }

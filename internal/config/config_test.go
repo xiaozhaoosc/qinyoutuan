@@ -12,8 +12,8 @@ import "testing"
 // applies to a fresh install.
 func TestListenDefaultIsReachable(t *testing.T) {
 	t.Setenv("QZ_LISTEN", "")
-	if got := Load().ListenAddr; got != "0.0.0.0:8081" {
-		t.Fatalf("default listen = %q, want 0.0.0.0:8081", got)
+	if got := Load().ListenAddr; got != "0.0.0.0:8086" {
+		t.Fatalf("default listen = %q, want 0.0.0.0:8086", got)
 	}
 }
 

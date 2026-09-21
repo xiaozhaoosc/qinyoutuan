@@ -12,7 +12,7 @@ type SingboxOptions struct {
 	// LegacyTUNStack emits tun.stack=gvisor for clients still on sing-box ≤1.14.
 	// Default false omits the field: sing-box 1.15 deprecated tun.stack and 1.17
 	// removes it (https://sing-box.sagernet.org/migration/#migrate-tun-stack).
-	// 轻舟 strategy: new/default subscriptions omit stack; 1.14 users opt in via
+	// 亲友团 strategy: new/default subscriptions omit stack; 1.14 users opt in via
 	// ?tun_stack=gvisor on the subscription URL.
 	LegacyTUNStack bool
 }
@@ -192,7 +192,7 @@ const (
 	singboxCNGeoIPURL   = "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs"
 )
 
-// applySingboxRoutingProfile owns only the two qingzhou CN route-set tags. The
+// applySingboxRoutingProfile owns only the two qinyoutuan CN route-set tags. The
 // built-in DNS already has a direct `local` resolver and a proxy-detoured
 // `remote` resolver. With fake-IP, keeping the query on `fake` preserves the
 // original domain for routing; once geosite-cn selects DIRECT, sing-box resolves
@@ -441,7 +441,7 @@ func injectSingboxAIRoute(doc map[string]any) {
 		}
 		insertAt++
 	}
-	aiRule := map[string]any{"rule_set": "qingzhou-ai", "outbound": tagAI}
+	aiRule := map[string]any{"rule_set": "qinyoutuan-ai", "outbound": tagAI}
 	merged := make([]map[string]any, 0, len(rules)+1)
 	merged = append(merged, rules[:insertAt]...)
 	merged = append(merged, aiRule)
@@ -451,12 +451,12 @@ func injectSingboxAIRoute(doc map[string]any) {
 	ruleSets := mapSlice(route["rule_set"])
 	kept := make([]map[string]any, 0, len(ruleSets)+1)
 	for _, ruleSet := range ruleSets {
-		if tag, _ := ruleSet["tag"].(string); tag != "qingzhou-ai" {
+		if tag, _ := ruleSet["tag"].(string); tag != "qinyoutuan-ai" {
 			kept = append(kept, ruleSet)
 		}
 	}
 	kept = append(kept, map[string]any{
-		"type": "remote", "tag": "qingzhou-ai", "format": "binary",
+		"type": "remote", "tag": "qinyoutuan-ai", "format": "binary",
 		"download_detour": tagProxy, "url": singboxAIRuleURL,
 	})
 	route["rule_set"] = kept

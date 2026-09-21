@@ -31,7 +31,7 @@ func rotate(t *testing.T, exePath string) {
 func setup(t *testing.T, cur, prev string) string {
 	t.Helper()
 	dir := t.TempDir()
-	exePath := filepath.Join(dir, "qingzhou")
+	exePath := filepath.Join(dir, "qinyoutuan")
 	if err := os.WriteFile(exePath, []byte(cur), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestRollbackStateRejectsUnusableBackup(t *testing.T) {
 	m := New(nil, nil)
 
 	dir := t.TempDir()
-	exePath := filepath.Join(dir, "qingzhou")
+	exePath := filepath.Join(dir, "qinyoutuan")
 	_ = os.WriteFile(exePath, []byte("cur"), 0o755)
 
 	// No backup at all.

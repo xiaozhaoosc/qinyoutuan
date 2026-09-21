@@ -33,7 +33,7 @@ func (a *API) handleAdminBackup(w http.ResponseWriter, r *http.Request) {
 	if base == "" || base == "." {
 		base = os.TempDir()
 	}
-	dir, err := os.MkdirTemp(base, ".qingzhou-backup-")
+	dir, err := os.MkdirTemp(base, ".qinyoutuan-backup-")
 	if err != nil {
 		fail(w, http.StatusInternalServerError, "创建临时目录失败")
 		return
@@ -44,7 +44,7 @@ func (a *API) handleAdminBackup(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	name := "qingzhou-backup-" + time.Now().Format("20060102-150405") + ".db"
+	name := "qinyoutuan-backup-" + time.Now().Format("20060102-150405") + ".db"
 	path := filepath.Join(dir, name)
 	if err := a.st.BackupTo(path); err != nil {
 		log.Printf("backup: %v", err)

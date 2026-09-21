@@ -24,7 +24,7 @@ func fakeBinary(t *testing.T, path string, marker byte) {
 func exeWithBackup(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	exePath := filepath.Join(dir, "qingzhou")
+	exePath := filepath.Join(dir, "qinyoutuan")
 	fakeBinary(t, exePath, 'C')
 	fakeBinary(t, backupPath(exePath), 'P')
 	return exePath
@@ -67,7 +67,7 @@ func TestBackupChecksRejectDamagedBinaries(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			dir := t.TempDir()
-			exePath := filepath.Join(dir, "qingzhou")
+			exePath := filepath.Join(dir, "qinyoutuan")
 			fakeBinary(t, exePath, 'C')
 			c.write(t, backupPath(exePath))
 

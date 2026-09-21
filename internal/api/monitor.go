@@ -83,7 +83,7 @@ func (a *API) handleDownloadAgent(w http.ResponseWriter, r *http.Request) {
 func (a *API) handleDownloadInstallScript(w http.ResponseWriter, r *http.Request) {
 	panelURL := a.publicBase(r)
 	script := `#!/bin/bash
-# qingzhou-probe one-click installer
+# qinyoutuan-probe one-click installer
 # Usage: bash <(curl -sL ` + panelURL + `/api/monitor/install.sh) <probe_token>
 set -e
 TOKEN="${1:-}"
@@ -99,9 +99,9 @@ case $ARCH in
   *) echo "不支持的架构: $ARCH"; exit 1 ;;
 esac
 BIN_URL="` + panelURL + `/api/monitor/agent/linux-${ARCH}"
-INSTALL_PATH="/usr/local/bin/qingzhou-probe"
-ENV_FILE="/etc/qingzhou-probe.env"
-SERVICE_FILE="/etc/systemd/system/qingzhou-probe.service"
+INSTALL_PATH="/usr/local/bin/qinyoutuan-probe"
+ENV_FILE="/etc/qinyoutuan-probe.env"
+SERVICE_FILE="/etc/systemd/system/qinyoutuan-probe.service"
 
 echo "[1/4] 下载探针二进制 (${ARCH})..."
 # 下载到同目录临时文件，成功后原子替换。直接覆盖正在运行的二进制会触发
@@ -149,12 +149,12 @@ chmod 600 "$ENV_FILE"
 echo "[3/4] 创建 systemd 服务..."
 cat > "$SERVICE_FILE" << 'EOF'
 [Unit]
-Description=Qingzhou Monitor Probe
+Description=QinYouTuan Monitor Probe
 After=network.target
 [Service]
 Type=simple
-EnvironmentFile=/etc/qingzhou-probe.env
-ExecStart=/usr/local/bin/qingzhou-probe
+EnvironmentFile=/etc/qinyoutuan-probe.env
+ExecStart=/usr/local/bin/qinyoutuan-probe
 Restart=always
 RestartSec=10
 [Install]
@@ -163,19 +163,19 @@ EOF
 
 echo "[4/4] 启动服务..."
 systemctl daemon-reload
-systemctl enable qingzhou-probe &>/dev/null
-systemctl restart qingzhou-probe
+systemctl enable qinyoutuan-probe &>/dev/null
+systemctl restart qinyoutuan-probe
 
 sleep 1
-if systemctl is-active --quiet qingzhou-probe; then
+if systemctl is-active --quiet qinyoutuan-probe; then
   echo ""
   echo "✅ 探针安装完成！"
   echo "   服务状态: 运行中"
-  echo "   查看日志: journalctl -u qingzhou-probe -f"
+  echo "   查看日志: journalctl -u qinyoutuan-probe -f"
 else
   echo ""
   echo "⚠️  服务启动失败，请检查日志:"
-  echo "   journalctl -u qingzhou-probe -n 20 --no-pager"
+  echo "   journalctl -u qinyoutuan-probe -n 20 --no-pager"
   exit 1
 fi
 `

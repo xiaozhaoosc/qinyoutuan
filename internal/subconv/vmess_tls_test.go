@@ -210,7 +210,7 @@ func TestVmessPlaintextHasNoTLSBlock(t *testing.T) {
 }
 
 // Foreign panels routinely emit allowInsecure as a JSON boolean rather than the
-// string "1" 轻舟 writes. str() renders that as "true", so an == "1" comparison
+// string "1" 亲友团 writes. str() renders that as "true", so an == "1" comparison
 // dropped the exemption and left the imported node failing cert verification.
 func TestImportedVmessInsecureAcceptsBothValueForms(t *testing.T) {
 	for _, form := range []string{`true`, `"true"`, `"1"`, `1`} {

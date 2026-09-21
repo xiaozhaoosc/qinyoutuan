@@ -50,7 +50,7 @@ func TestGetMeAndSend(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/getMe"):
-			_, _ = io.WriteString(w, `{"ok":true,"result":{"id":1,"is_bot":true,"first_name":"舟","username":"qingzhou_bot"}}`)
+			_, _ = io.WriteString(w, `{"ok":true,"result":{"id":1,"is_bot":true,"first_name":"舟","username":"qinyoutuan_bot"}}`)
 		case strings.HasSuffix(r.URL.Path, "/sendMessage"):
 			_ = json.NewDecoder(r.Body).Decode(&gotSend)
 			_, _ = io.WriteString(w, `{"ok":true,"result":{"message_id":7}}`)
@@ -68,7 +68,7 @@ func TestGetMeAndSend(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if me.Username != "qingzhou_bot" {
+	if me.Username != "qinyoutuan_bot" {
 		t.Fatalf("username = %q", me.Username)
 	}
 	if err := SendHTML(context.Background(), c, 42, "<b>hi</b>"); err != nil {

@@ -1,14 +1,14 @@
 #!/bin/bash
-# Daily backup of the qingzhou SQLite database. Keeps 7 days.
-# Install: cp to /opt/qingzhou/backup.sh, chmod +x, add the cron in deploy/README.md.
+# Daily backup of the qinyoutuan SQLite database. Keeps 7 days.
+# Install: cp to /opt/qinyoutuan/backup.sh, chmod +x, add the cron in deploy/README.md.
 set -e
-DIR=/opt/qingzhou/backups
+DIR=/opt/qinyoutuan/backups
 mkdir -p "$DIR"
 TS=$(date +%Y%m%d-%H%M%S)
 
 # Online hot backup (safe while the app is running).
-sqlite3 /opt/qingzhou/qingzhou.db ".backup '$DIR/qingzhou-$TS.db'"
+sqlite3 /opt/qinyoutuan/qinyoutuan.db ".backup '$DIR/qinyoutuan-$TS.db'"
 
 # Retention: delete backups older than 7 days.
 find "$DIR" -maxdepth 1 -name '*.db' -mtime +7 -delete 2>/dev/null || true
-echo "$(date '+%F %T') backup ok -> $DIR (qingzhou-$TS.db)"
+echo "$(date '+%F %T') backup ok -> $DIR (qinyoutuan-$TS.db)"

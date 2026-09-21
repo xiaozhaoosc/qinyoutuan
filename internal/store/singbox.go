@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	"qingzhou/internal/sbproc"
 	"qingzhou/internal/singbox"
 )
 
@@ -37,7 +39,7 @@ type SbTls struct {
 	DecryptFailed bool `json:"-"`
 }
 
-// SbInbound is a native sing-box server inbound owned by 轻舟.
+// SbInbound is a native sing-box server inbound owned by 亲友团.
 type SbInbound struct {
 	ID         int64  `json:"id"`
 	ServerID   int64  `json:"server_id"`
@@ -68,8 +70,25 @@ type SbInbound struct {
 	// landing's. This flag keeps that visible in 链路拓扑 until an admin saves the
 	// inbound again (which clears it), rather than letting the downgrade vanish.
 	UpstreamBroken bool  `json:"upstream_broken"`
-	CreatedAt      int64 `json:"created_at"`
-	UpdatedAt      int64 `json:"updated_at"`
+	// ArgoEnabled exposes this inbound through a Cloudflare Argo/Quick Tunnel
+	// (cloudflared) so clients dial a CDN edge instead of the landing IP, keeping
+	// the node reachable when the landing IP is blocked. Normally a vmess inbound
+	// with a ws transport. ArgoMode: "" (off) | "temporary" | "fixed";
+	// ArgoAuth is the fixed-tunnel token, ArgoDomain its public hostname.
+	// ArgoAuth is a Cloudflare credential and is stored ENCRYPTED at rest (same
+	// AES-256-GCM wrapping as SbTls.ServerJSON); read paths decrypt it, so
+	// callers always see the plaintext token.
+	ArgoEnabled bool   `json:"argo_enabled"`
+	ArgoMode    string `json:"argo_mode"`
+	ArgoAuth    string `json:"argo_auth"`
+	ArgoDomain  string `json:"argo_domain"`
+	// ArgoHost is the tunnel hostname this inbound is currently reachable at
+	// (fixed → stored domain; temporary → what the running cloudflared parsed).
+	// Read-only, populated by the store read paths from sbproc's runtime cache;
+	// never persisted. Lets the UI show "隧道域名" without another lookup.
+	ArgoHost string `json:"argo_host"`
+	CreatedAt   int64  `json:"created_at"`
+	UpdatedAt   int64  `json:"updated_at"`
 }
 
 // ---- sb_tls ----
@@ -241,7 +260,7 @@ func (s *Store) resolveTlsBlock(tlsID int64, tag string, tlsCache map[int64]*SbT
 // ---- sb_inbounds ----
 
 func (s *Store) ListSbInbounds() ([]*SbInbound, error) {
-	rows, err := s.db.Query(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, created_at, updated_at
+	rows, err := s.db.Query(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, argo_enabled, argo_mode, argo_auth, argo_domain, created_at, updated_at
 		FROM sb_inbounds ORDER BY sort_order, id`)
 	if err != nil {
 		return nil, err
@@ -250,12 +269,15 @@ func (s *Store) ListSbInbounds() ([]*SbInbound, error) {
 	out := []*SbInbound{}
 	for rows.Next() {
 		var n SbInbound
-		var enabled, broken int
-		if err := rows.Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &n.CreatedAt, &n.UpdatedAt); err != nil {
+		var enabled, broken, argoEnabled int
+		if err := rows.Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &n.CreatedAt, &n.UpdatedAt); err != nil {
 			return nil, err
 		}
 		n.Enabled = enabled == 1
 		n.UpstreamBroken = broken == 1
+		n.ArgoEnabled = argoEnabled == 1
+		n.ArgoAuth, _ = s.decryptOK(n.ArgoAuth)
+		n.ArgoHost = sbproc.ArgoHost(n.Tag)
 		out = append(out, &n)
 	}
 	return out, rows.Err()
@@ -263,9 +285,9 @@ func (s *Store) ListSbInbounds() ([]*SbInbound, error) {
 
 func (s *Store) GetSbInbound(id int64) (*SbInbound, error) {
 	var n SbInbound
-	var enabled, broken int
-	err := s.db.QueryRow(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, created_at, updated_at
-		FROM sb_inbounds WHERE id=?`, id).Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &n.CreatedAt, &n.UpdatedAt)
+	var enabled, broken, argoEnabled int
+	err := s.db.QueryRow(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, argo_enabled, argo_mode, argo_auth, argo_domain, created_at, updated_at
+		FROM sb_inbounds WHERE id=?`, id).Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &n.CreatedAt, &n.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -274,24 +296,34 @@ func (s *Store) GetSbInbound(id int64) (*SbInbound, error) {
 	}
 	n.Enabled = enabled == 1
 	n.UpstreamBroken = broken == 1
+	n.ArgoEnabled = argoEnabled == 1
+	n.ArgoAuth, _ = s.decryptOK(n.ArgoAuth)
+	n.ArgoHost = sbproc.ArgoHost(n.Tag)
 	return &n, nil
 }
 
 func (s *Store) GetSbInboundByTag(tag string) (*SbInbound, error) {
 	var n SbInbound
-	var enabled, broken int
-	err := s.db.QueryRow(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, created_at, updated_at
-		FROM sb_inbounds WHERE tag=?`, tag).Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &n.CreatedAt, &n.UpdatedAt)
+	var enabled, broken, argoEnabled int
+	err := s.db.QueryRow(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, argo_enabled, argo_mode, argo_auth, argo_domain, created_at, updated_at
+		FROM sb_inbounds WHERE tag=?`, tag).Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &n.CreatedAt, &n.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	n.Enabled = enabled == 1
 	n.UpstreamBroken = broken == 1
+	n.ArgoEnabled = argoEnabled == 1
+	n.ArgoAuth, _ = s.decryptOK(n.ArgoAuth)
+	n.ArgoHost = sbproc.ArgoHost(n.Tag)
 	return &n, err
 }
 
 func (s *Store) SaveSbInbound(n *SbInbound) (int64, error) {
 	now := time.Now().Unix()
+	// The Cloudflare tunnel token is a credential: encrypt at rest like every
+	// other secret. s.encrypt is idempotent for already-prefixed values, so an
+	// update that echoes a stored (already-encrypted) row is safe.
+	n.ArgoAuth = s.encrypt(n.ArgoAuth)
 	if n.Options == "" {
 		n.Options = "{}"
 	}
@@ -304,9 +336,9 @@ func (s *Store) SaveSbInbound(n *SbInbound) (int64, error) {
 			// same note in SaveSbTls.
 			_ = s.db.QueryRow(`SELECT COALESCE(MAX(sort_order),0)+1 FROM sb_inbounds`).Scan(&n.SortOrder)
 		}
-		res, err := s.db.Exec(`INSERT INTO sb_inbounds (server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, created_at, updated_at)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-			n.ServerID, n.Type, n.Tag, n.Listen, n.ListenPort, n.TlsID, n.Options, b2i(n.Enabled), n.SortOrder, n.UpstreamInboundID, n.RelaySecret, n.EgressID, now, now)
+		res, err := s.db.Exec(`INSERT INTO sb_inbounds (server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, argo_enabled, argo_mode, argo_auth, argo_domain, created_at, updated_at)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			n.ServerID, n.Type, n.Tag, n.Listen, n.ListenPort, n.TlsID, n.Options, b2i(n.Enabled), n.SortOrder, n.UpstreamInboundID, n.RelaySecret, n.EgressID, b2i(n.ArgoEnabled), n.ArgoMode, n.ArgoAuth, n.ArgoDomain, now, now)
 		if err != nil {
 			return 0, err
 		}
@@ -333,9 +365,9 @@ func (s *Store) SaveSbInbound(n *SbInbound) (int64, error) {
 	if n.UpstreamInboundID != 0 || n.EgressID != 0 {
 		rechained = 1
 	}
-	if _, err := tx.Exec(`UPDATE sb_inbounds SET server_id=?, type=?, tag=?, listen=?, listen_port=?, tls_id=?, options=?, enabled=?, sort_order=?, upstream_inbound_id=?, relay_secret=?, egress_id=?,
+	if _, err := tx.Exec(`UPDATE sb_inbounds SET server_id=?, type=?, tag=?, listen=?, listen_port=?, tls_id=?, options=?, enabled=?, sort_order=?, upstream_inbound_id=?, relay_secret=?, egress_id=?, argo_enabled=?, argo_mode=?, argo_auth=?, argo_domain=?,
 		upstream_broken=CASE WHEN ?=1 THEN 0 ELSE upstream_broken END, updated_at=? WHERE id=?`,
-		n.ServerID, n.Type, n.Tag, n.Listen, n.ListenPort, n.TlsID, n.Options, b2i(n.Enabled), n.SortOrder, n.UpstreamInboundID, n.RelaySecret, n.EgressID, rechained, now, n.ID); err != nil {
+		n.ServerID, n.Type, n.Tag, n.Listen, n.ListenPort, n.TlsID, n.Options, b2i(n.Enabled), n.SortOrder, n.UpstreamInboundID, n.RelaySecret, n.EgressID, b2i(n.ArgoEnabled), n.ArgoMode, n.ArgoAuth, n.ArgoDomain, rechained, now, n.ID); err != nil {
 		return n.ID, err
 	}
 	if tagChanged {
@@ -440,7 +472,7 @@ func serverIDsRelayingTo(tx *sql.Tx, landingID int64) ([]int64, error) {
 }
 
 func (s *Store) ListSbInboundsByServer(serverID int64) ([]*SbInbound, error) {
-	rows, err := s.db.Query(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, created_at, updated_at
+	rows, err := s.db.Query(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, argo_enabled, argo_mode, argo_auth, argo_domain, created_at, updated_at
 		FROM sb_inbounds WHERE server_id=? ORDER BY sort_order, id`, serverID)
 	if err != nil {
 		return nil, err
@@ -449,11 +481,14 @@ func (s *Store) ListSbInboundsByServer(serverID int64) ([]*SbInbound, error) {
 	out := []*SbInbound{}
 	for rows.Next() {
 		var n SbInbound
-		var enabled int
-		if err := rows.Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &n.CreatedAt, &n.UpdatedAt); err != nil {
+		var enabled, argoEnabled int
+		if err := rows.Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &n.CreatedAt, &n.UpdatedAt); err != nil {
 			return nil, err
 		}
 		n.Enabled = enabled == 1
+		n.ArgoEnabled = argoEnabled == 1
+		n.ArgoAuth, _ = s.decryptOK(n.ArgoAuth)
+		n.ArgoHost = sbproc.ArgoHost(n.Tag)
 		out = append(out, &n)
 	}
 	return out, rows.Err()
@@ -705,6 +740,63 @@ type SelfBuiltLink struct {
 	NodeID int64  // logical node id — several nodes may share one inbound tag
 	Tag    string // physical inbound tag — topology/config join key
 	Link   string
+}
+
+// argoCDNPorts mirrors sing-box-yg's 13-port CDN exposure: clients dial a
+// Cloudflare anycast address on one of these edge ports and set the Host header
+// to the tunnel hostname, so CF routes the connection to the tunnel no matter
+// which landing IP it lands on. 6 are https-edge ports, 7 are plain-http edge.
+var argoCDNPorts = []struct {
+	port int
+	tls  bool
+}{
+	{443, true}, {2053, true}, {2083, true}, {2087, true}, {2096, true}, {8443, true},
+	{80, false}, {2052, false}, {2082, false}, {2086, false}, {2095, false}, {8080, false}, {8880, false},
+}
+
+// argoSpec maps an argo-exposed inbound to its cloudflared tunnel spec. The
+// quick tunnel fronts the inbound on its own loopback listen port.
+func (ib *SbInbound) argoSpec() sbproc.ArgoSpec {
+	return sbproc.ArgoSpec{
+		Mode:       ib.ArgoMode,
+		Auth:       ib.ArgoAuth,
+		Domain:     ib.ArgoDomain,
+		TargetPort: ib.ListenPort,
+	}
+}
+
+// argoVariantLinks expands a single base node link into the 13-port CDN set for
+// an argo tunnel. argoHost is the tunnel hostname clients must send as
+// Host/SNI; the dial address resolves through Cloudflare's anycast, so a blocked
+// landing IP never takes the node offline. Returns nil when no host is known yet
+// (a temporary tunnel still connecting). Only meaningful for ws-transport
+// (typically vmess) links.
+func argoVariantLinks(base singbox.LinkParams, argoHost string) []singbox.LinkParams {
+	if argoHost == "" {
+		return nil
+	}
+	out := make([]singbox.LinkParams, 0, len(argoCDNPorts))
+	for _, cp := range argoCDNPorts {
+		v := base
+		v.Host = argoHost
+		v.Port = cp.port
+		v.WSHost = argoHost
+		v.Network = "ws"
+		v.TLS = cp.tls
+		if cp.tls {
+			v.SNI = argoHost
+			v.Insecure = false
+			if v.Fingerprint == "" {
+				v.Fingerprint = "chrome"
+			}
+		} else {
+			v.SNI = ""
+			v.Insecure = false
+		}
+		v.Tag = base.Tag + "-argo-" + strconv.Itoa(cp.port)
+		out = append(out, v)
+	}
+	return out
 }
 
 // BuildSelfBuiltLinks generates client share-links for every enabled native
@@ -960,6 +1052,25 @@ func (s *Store) BuildSelfBuiltLinks(u *User, host string) []SelfBuiltLink {
 		}
 		if link := singbox.BuildShareLink(p); link != "" {
 			out = append(out, SelfBuiltLink{NodeID: logicalID, Tag: ib.Tag, Link: link})
+		}
+		// Cloudflare Argo exposure: when the inbound is fronted by a tunnel, also
+		// emit the 13-port CDN set so a blocked landing IP never takes the node
+		// offline. The normal direct link above stays, giving clients both. For a
+		// temporary tunnel we only have the hostname once it is up (sbproc cache),
+		// so before then nothing extra is emitted and the node still works direct.
+		if ib.ArgoEnabled && ib.Type == "vmess" && (ib.ArgoMode == "temporary" || ib.ArgoMode == "fixed") {
+			spec := ib.argoSpec()
+			host := ""
+			if spec.Mode == "fixed" {
+				host = spec.Domain
+			} else {
+				host = sbproc.ArgoHost(ib.Tag)
+			}
+			for _, av := range argoVariantLinks(p, host) {
+				if l := singbox.BuildShareLink(av); l != "" {
+					out = append(out, SelfBuiltLink{NodeID: logicalID, Tag: ib.Tag, Link: l})
+				}
+			}
 		}
 	}
 	return out

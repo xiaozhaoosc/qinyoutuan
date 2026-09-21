@@ -29,12 +29,12 @@ func Load() *Config {
 		// QZ_LISTEN explicitly — the one-click installer writes it either way, and
 		// on upgrade it pins the old behaviour rather than letting this default
 		// widen the reach of an install that is already running.
-		ListenAddr:    env("QZ_LISTEN", "0.0.0.0:8081"),
-		DBPath:        env("QZ_DB", "qingzhou.db"),
+		ListenAddr:    env("QZ_LISTEN", "0.0.0.0:8086"),
+		DBPath:        env("QZ_DB", "qinyoutuan.db"),
 		AdminUsername: env("QZ_ADMIN_USER", "mllt992"),
 		// Empty means: generate a random password on first-run seed and log it.
 		AdminPassword: os.Getenv("QZ_ADMIN_PASS"),
-		SSHKeyDir:     env("QZ_SSH_KEY_DIR", defaultSSHKeyDir(env("QZ_DB", "qingzhou.db"))),
+		SSHKeyDir:     env("QZ_SSH_KEY_DIR", defaultSSHKeyDir(env("QZ_DB", "qinyoutuan.db"))),
 	}
 }
 

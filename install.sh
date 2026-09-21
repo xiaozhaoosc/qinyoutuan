@@ -1,5 +1,5 @@
 #!/bin/bash
-# 轻舟面板一键安装 / 更新脚本
+# 亲友团面板一键安装 / 更新脚本
 #
 # 全新安装（交互式配置）与升级（保留配置、原子替换二进制）共用同一入口：
 #   bash <(curl -fsSL https://raw.githubusercontent.com/mllt992/qing-zhou/main/install.sh)
@@ -9,18 +9,18 @@
 #   --force            与当前版本相同也强制重装
 #   --proxy <前缀>     GitHub 下载加速前缀，如 https://mirror.ghproxy.com/
 #   uninstall          卸载（保留数据库与配置，除非再确认删除）
-#                      装好后本脚本会存一份到 /opt/qingzhou/install.sh，卸载直接：
-#                        bash /opt/qingzhou/install.sh uninstall
+#                      装好后本脚本会存一份到 /opt/qinyoutuan/install.sh，卸载直接：
+#                        bash /opt/qinyoutuan/install.sh uninstall
 #
 # 非交互环境（无 TTY，如 CI）下全新安装使用默认值，可用环境变量覆盖：
 #   QZ_LISTEN / QZ_PUBLIC_BASE / QZ_ADMIN_USER / QZ_ADMIN_PASS
 set -euo pipefail
 
 REPO="${QZ_REPO:-mllt992/qing-zhou}"
-INSTALL_DIR="/opt/qingzhou"
-BIN_PATH="$INSTALL_DIR/qingzhou"
-ENV_FILE="$INSTALL_DIR/qingzhou.env"
-SERVICE_NAME="qingzhou"
+INSTALL_DIR="/opt/qinyoutuan"
+BIN_PATH="$INSTALL_DIR/qinyoutuan"
+ENV_FILE="$INSTALL_DIR/qinyoutuan.env"
+SERVICE_NAME="qinyoutuan"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 VERSION_MARKER="$INSTALL_DIR/.version"
 
@@ -173,7 +173,7 @@ CURRENT=""
 if [ -x "$BIN_PATH" ]; then
   # 优先问运行中的面板（/api/health 免认证返回版本），失败退回安装标记文件
   LISTEN=$(env_get QZ_LISTEN)
-  LISTEN="${LISTEN:-0.0.0.0:8081}"   # 与二进制的默认值一致（internal/config）
+  LISTEN="${LISTEN:-0.0.0.0:8086}"   # 与二进制的默认值一致（internal/config）
   HEALTH_HOST="${LISTEN/0.0.0.0/127.0.0.1}"
   if [ "$HAVE_CURL" = "1" ]; then
     CURRENT=$(curl -fsS --connect-timeout 3 "http://${HEALTH_HOST}/api/health" 2>/dev/null \
@@ -198,16 +198,16 @@ TMP_BIN="${BIN_PATH}.new"
 TMP_SUMS="$INSTALL_DIR/.SHA256SUMS.tmp"
 trap 'rm -f "$TMP_BIN" "$TMP_SUMS"' EXIT
 
-info "下载 qingzhou-linux-${ARCH} ..."
-dl "$(gh_url "releases/download/${TAG}/qingzhou-linux-${ARCH}")" "$TMP_BIN" \
+info "下载 qinyoutuan-linux-${ARCH} ..."
+dl "$(gh_url "releases/download/${TAG}/qinyoutuan-linux-${ARCH}")" "$TMP_BIN" \
   || err "下载失败。国内网络可加 --proxy https://mirror.ghproxy.com/ 重试"
 [ -s "$TMP_BIN" ] || err "下载的文件为空"
 
 info "校验 SHA-256 ..."
 if dl "$(gh_url "releases/download/${TAG}/SHA256SUMS.txt")" "$TMP_SUMS" 2>/dev/null; then
-  EXPECT=$(grep -E " qingzhou-linux-${ARCH}\$" "$TMP_SUMS" | awk '{print $1}' || true)
+  EXPECT=$(grep -E " qinyoutuan-linux-${ARCH}\$" "$TMP_SUMS" | awk '{print $1}' || true)
   GOT=$(sha256sum "$TMP_BIN" | awk '{print $1}')
-  [ -n "$EXPECT" ] || err "SHA256SUMS.txt 中找不到 qingzhou-linux-${ARCH}"
+  [ -n "$EXPECT" ] || err "SHA256SUMS.txt 中找不到 qinyoutuan-linux-${ARCH}"
   [ "$EXPECT" = "$GOT" ] || err "SHA-256 校验失败（期望 $EXPECT 实际 $GOT），已中止"
 else
   echo "⚠️  该 release 无 SHA256SUMS.txt，跳过校验"
@@ -217,7 +217,7 @@ chmod 755 "$TMP_BIN"
 # ---------- 全新安装：交互式配置 ----------
 if [ "$MODE" = "install" ]; then
   echo ""
-  echo "========== 轻舟面板初始配置 =========="
+  echo "========== 亲友团面板初始配置 =========="
   [ "$INTERACTIVE" = "0" ] && echo "（无终端交互，使用默认值/环境变量）"
 
   # 监听地址是最容易一路回车踩坑的一项：默认 127.0.0.1 时面板只有本机连得上，
@@ -228,12 +228,12 @@ if [ "$MODE" = "install" ]; then
   else
     echo ""
     echo "面板打算怎么访问？"
-    echo "  1) 直接用 IP:端口 打开        → 监听 0.0.0.0:8081（明文 HTTP，公网可达）"
-    echo "  2) 前面有 nginx / caddy 反代  → 监听 127.0.0.1:8081（仅本机可连）"
+    echo "  1) 直接用 IP:端口 打开        → 监听 0.0.0.0:8086（明文 HTTP，公网可达）"
+    echo "  2) 前面有 nginx / caddy 反代  → 监听 127.0.0.1:8086（仅本机可连）"
     ask "输入 1 或 2，也可直接填监听地址" "1"
     case "$REPLY_VALUE" in
-      1) CFG_LISTEN="0.0.0.0:8081" ;;
-      2) CFG_LISTEN="127.0.0.1:8081" ;;
+      1) CFG_LISTEN="0.0.0.0:8086" ;;
+      2) CFG_LISTEN="127.0.0.1:8086" ;;
       *) CFG_LISTEN="$REPLY_VALUE" ;;
     esac
   fi
@@ -273,9 +273,9 @@ if [ "$MODE" = "install" ]; then
   info "写入配置 $ENV_FILE ..."
   umask 077
   cat > "$ENV_FILE" <<EOF
-# 由 install.sh 生成于 $(date '+%F %T')。参考 deploy/qingzhou.env.example
+# 由 install.sh 生成于 $(date '+%F %T')。参考 deploy/qinyoutuan.env.example
 QZ_LISTEN=$CFG_LISTEN
-QZ_DB=$INSTALL_DIR/qingzhou.db
+QZ_DB=$INSTALL_DIR/qinyoutuan.db
 $( [ -n "$CFG_BASE" ] && echo "QZ_PUBLIC_BASE=$CFG_BASE" || echo "# QZ_PUBLIC_BASE=" )
 $PROBE_LINE
 
@@ -291,7 +291,7 @@ EOF
   info "写入 systemd 服务 ..."
   cat > "$SERVICE_FILE" <<EOF
 [Unit]
-Description=QingZhou subscription panel
+Description=QinYouTuan subscription panel
 After=network.target
 
 [Service]
@@ -334,15 +334,15 @@ if [ "$MODE" = "update" ]; then
   fi
 fi
 
-# 升级不能顺手扩大监听范围。二进制在 QZ_LISTEN 缺失时默认 0.0.0.0:8081，而这台
+# 升级不能顺手扩大监听范围。二进制在 QZ_LISTEN 缺失时默认 0.0.0.0:8086，而这台
 # 机器上一版在同样缺失时跑的是回环 —— 直接重启就等于把一个只给本机开的面板推上
 # 公网。配置里没写过的按原行为显式钉住；要直连公网是一次明确的选择，不该由升级
 # 替人做主。全新安装不走这里：上面已按用户的选择写过 QZ_LISTEN。
 if [ "$MODE" = "update" ] && [ -f "$ENV_FILE" ] && [ -z "$(env_get QZ_LISTEN)" ]; then
-  printf 'QZ_LISTEN=127.0.0.1:8081\n' >> "$ENV_FILE"
-  echo "⚠️  $ENV_FILE 里没有 QZ_LISTEN。新版在缺省时改为监听 0.0.0.0:8081（公网可达），"
-  echo "    为免升级把面板暴露出去，已按原行为写入 QZ_LISTEN=127.0.0.1:8081。"
-  echo "    要用 IP:端口 直连，改成 0.0.0.0:8081 再 systemctl restart $SERVICE_NAME"
+  printf 'QZ_LISTEN=127.0.0.1:8086\n' >> "$ENV_FILE"
+  echo "⚠️  $ENV_FILE 里没有 QZ_LISTEN。新版在缺省时改为监听 0.0.0.0:8086（公网可达），"
+  echo "    为免升级把面板暴露出去，已按原行为写入 QZ_LISTEN=127.0.0.1:8086。"
+  echo "    要用 IP:端口 直连，改成 0.0.0.0:8086 再 systemctl restart $SERVICE_NAME"
 fi
 
 info "启动服务 ..."
@@ -353,7 +353,7 @@ systemctl restart "$SERVICE_NAME"
 # ---------- 启动确认 ----------
 sleep 2
 LISTEN=$(env_get QZ_LISTEN)
-LISTEN="${LISTEN:-0.0.0.0:8081}"   # 与二进制的默认值一致（internal/config）
+LISTEN="${LISTEN:-0.0.0.0:8086}"   # 与二进制的默认值一致（internal/config）
 HEALTH_HOST="${LISTEN/0.0.0.0/127.0.0.1}"
 OK=0
 for _ in 1 2 3 4 5; do

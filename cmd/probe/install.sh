@@ -1,10 +1,10 @@
 #!/bin/bash
-# One-click install script for qingzhou-probe agent.
+# One-click install script for qinyoutuan-probe agent.
 # Usage: bash install.sh <panel_url> <probe_token>
 #
 # This script:
 #   1. Downloads the probe binary for the current architecture
-#   2. Creates a secure environment file (/etc/qingzhou-probe.env, mode 600)
+#   2. Creates a secure environment file (/etc/qinyoutuan-probe.env, mode 600)
 #   3. Installs and starts a systemd service
 set -e
 
@@ -25,9 +25,9 @@ case $ARCH in
 esac
 
 BIN_URL="${PANEL_URL}/api/monitor/agent/linux-${ARCH}"
-INSTALL_PATH="/usr/local/bin/qingzhou-probe"
-ENV_FILE="/etc/qingzhou-probe.env"
-SERVICE_FILE="/etc/systemd/system/qingzhou-probe.service"
+INSTALL_PATH="/usr/local/bin/qinyoutuan-probe"
+ENV_FILE="/etc/qinyoutuan-probe.env"
+SERVICE_FILE="/etc/systemd/system/qinyoutuan-probe.service"
 
 echo "[1/4] 下载探针二进制 (${ARCH})..."
 # 下载到同目录临时文件，成功后原子替换。直接覆盖正在运行的二进制会触发
@@ -77,7 +77,7 @@ chmod 600 "$ENV_FILE"
 echo "[3/4] 创建 systemd 服务..."
 cat > "$SERVICE_FILE" << EOF
 [Unit]
-Description=Qingzhou Monitor Probe
+Description=QinYouTuan Monitor Probe
 After=network.target
 
 [Service]
@@ -97,19 +97,19 @@ EOF
 
 echo "[4/4] 启动服务..."
 systemctl daemon-reload
-systemctl enable qingzhou-probe &>/dev/null
-systemctl restart qingzhou-probe
+systemctl enable qinyoutuan-probe &>/dev/null
+systemctl restart qinyoutuan-probe
 
 sleep 1
-if systemctl is-active --quiet qingzhou-probe; then
+if systemctl is-active --quiet qinyoutuan-probe; then
   echo ""
   echo "✅ 探针安装完成！"
   echo "   服务状态: 运行中"
-  echo "   查看日志: journalctl -u qingzhou-probe -f"
-  echo "   卸载: systemctl disable --now qingzhou-probe && rm $INSTALL_PATH $ENV_FILE $SERVICE_FILE"
+  echo "   查看日志: journalctl -u qinyoutuan-probe -f"
+  echo "   卸载: systemctl disable --now qinyoutuan-probe && rm $INSTALL_PATH $ENV_FILE $SERVICE_FILE"
 else
   echo ""
   echo "⚠️  服务启动失败，请检查日志:"
-  echo "   journalctl -u qingzhou-probe -n 20 --no-pager"
+  echo "   journalctl -u qinyoutuan-probe -n 20 --no-pager"
   exit 1
 fi

@@ -7,7 +7,7 @@ import (
 
 func TestProbeInstallSummaryDoesNotFailOnMissingVersionFlag(t *testing.T) {
 	got := probeInstallSummary(
-		"flag provided but not defined: -version\nUsage of /usr/local/bin/qingzhou-probe:\n",
+		"flag provided but not defined: -version\nUsage of /usr/local/bin/qinyoutuan-probe:\n",
 		errors.New("exit: Process exited with status 2"),
 	)
 	if got != "探针安装完成（二进制已启动，版本将在首次上报后显示）" {

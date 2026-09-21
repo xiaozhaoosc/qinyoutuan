@@ -1,7 +1,7 @@
 <template>
   <img
     class="qz-brand-mark"
-    src="/qingzhou-mark.svg"
+    src="/qinyoutuan-mark.svg"
     alt=""
     aria-hidden="true"
     :width="size"

@@ -81,13 +81,13 @@
       <n-card v-show="activeSectionId === 'settings-access'" id="settings-access" class="settings-section" size="small">
         <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;line-height:1.7;">
           面板对外访问地址，用于订阅链接、探针安装、邮件验证/找回链接，以及下方的 sing-box 一键安装命令。
-          填写完整地址，例如 <code>https://node.example.com</code> 或 <code>http://1.2.3.4:8081</code>；
+          填写完整地址，例如 <code>https://node.example.com</code> 或 <code>http://1.2.3.4:8086</code>；
           不带 <code>http(s)://</code> 前缀时默认按 <code>https</code> 处理。留空则自动依据反向代理头 / 请求 Host 推断。
         </p>
         <n-form label-placement="top">
           <n-form-item label="访问地址">
             <n-input v-model:value="form.public_base" :disabled="envLocked('public_base')"
-              placeholder="https://node.example.com 或 http://1.2.3.4:8081" style="max-width:420px;" />
+              placeholder="https://node.example.com 或 http://1.2.3.4:8086" style="max-width:420px;" />
           </n-form-item>
           <n-form-item v-if="envLocked('public_base')" label="配置来源">
             <span style="font-size:12px;color:var(--warning,#d97706);">
@@ -572,7 +572,7 @@
       <n-card v-show="activeSectionId === 'settings-backup'" id="settings-backup" class="settings-section" size="small">
         <p style="font-size:12px;color:var(--text-3);margin-bottom:10px;">
           在线导出整库快照（单个 <code>.db</code> 文件，含用户 / 订单 / 节点 / 证书）。数据库跑在 WAL 模式下，
-          <b>直接 <code>scp</code> 拷贝 <code>qingzhou.db</code> 拿到的是残缺副本</b>——已提交的数据可能还在 <code>-wal</code> 里。
+          <b>直接 <code>scp</code> 拷贝 <code>qinyoutuan.db</code> 拿到的是残缺副本</b>——已提交的数据可能还在 <code>-wal</code> 里。
           此处导出由 SQLite 自己在一致性快照上生成，导出期间面板照常读写。
           文件里的敏感字段仍是加密的，恢复到别处需要同一个 <code>QZ_SECRET_KEY</code>。
         </p>
@@ -757,7 +757,7 @@ const currentTgTplBody = computed({
   set: (v: string) => { form[currentTgTplField.value] = v },
 })
 const tgSample: Record<string, string> = {
-  site: '轻舟', username: 'alice',
+  site: '亲友团', username: 'alice',
   panel: 'https://panel.example', panel_link: '打开面板',
   url: 'https://panel.example/sub/xxxx',
   url_clash: 'https://panel.example/sub/xxxx?format=clash',
@@ -1182,7 +1182,7 @@ const backingUp = ref(false)
 async function handleBackup() {
   backingUp.value = true
   try {
-    await apiDownload('/api/admin/backup', 'qingzhou-backup.db')
+    await apiDownload('/api/admin/backup', 'qinyoutuan-backup.db')
     message.success('备份已开始下载')
   } catch (e: any) { message.error(e.message || '备份失败') } finally { backingUp.value = false }
 }

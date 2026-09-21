@@ -68,7 +68,7 @@ func (m *Manager) defaultCheck(path string) error {
 
 // sandboxHint names the one cause behind an EROFS on the config directory that
 // the error itself points away from: the directory is read-only *for this process
-// only*. The panel's own unit (install.sh, deploy/qingzhou.service) sets
+// only*. The panel's own unit (install.sh, deploy/qinyoutuan.service) sets
 // ProtectSystem=full, which remounts /usr AND /etc read-only inside the service's
 // mount namespace — so `touch /etc/sing-box/x` from a root shell on the very same
 // machine succeeds, and the operator is left staring at a writable disk reporting
@@ -83,8 +83,8 @@ func sandboxHint(dir string, err error) error {
 	}
 	return fmt.Errorf("%w —— %s 对面板进程只读，宿主机上能写不代表服务里能写："+
 		"面板 systemd 单元的 ProtectSystem 把它挡在了外面。放行后重启面板："+
-		"mkdir -p /etc/systemd/system/qingzhou.service.d && printf '[Service]\\nReadWritePaths=%s\\n' "+
-		"> /etc/systemd/system/qingzhou.service.d/10-singbox-rw.conf && systemctl daemon-reload && systemctl restart qingzhou",
+		"mkdir -p /etc/systemd/system/qinyoutuan.service.d && printf '[Service]\\nReadWritePaths=%s\\n' "+
+		"> /etc/systemd/system/qinyoutuan.service.d/10-singbox-rw.conf && systemctl daemon-reload && systemctl restart qinyoutuan",
 		err, dir, dir)
 }
 
@@ -314,7 +314,7 @@ func FindSingBoxBin() string {
 		}
 	}
 	for _, p := range []string{
-		"/opt/qingzhou/sing-box",
+		"/opt/qinyoutuan/sing-box",
 		"/usr/local/bin/sing-box",
 		"/usr/bin/sing-box",
 	} {

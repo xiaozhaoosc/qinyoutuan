@@ -381,9 +381,9 @@ async function poll() {
     updating.value = false
     progress.status = 'failed'
     progress.message = `面板已有 ${Math.round(OFFLINE_GIVE_UP_MS / 60000)} 分钟连不上，新版本可能没能启动。`
-      + '请到服务器执行 journalctl -u qingzhou -n 200 查看原因；'
-      + '需要立刻恢复，就用更新前留下的 .prev 顶回去（默认装在 /opt/qingzhou）：'
-      + 'cp -f qingzhou.prev qingzhou && systemctl restart qingzhou'
+      + '请到服务器执行 journalctl -u qinyoutuan -n 200 查看原因；'
+      + '需要立刻恢复，就用更新前留下的 .prev 顶回去（默认装在 /opt/qinyoutuan）：'
+      + 'cp -f qinyoutuan.prev qinyoutuan && systemctl restart qinyoutuan'
     message.error('新版本可能启动失败，详见下方提示')
     return
   }

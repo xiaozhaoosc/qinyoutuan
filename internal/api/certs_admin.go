@@ -148,7 +148,7 @@ func (a *API) handleAdminCertAcme(w http.ResponseWriter, r *http.Request) {
 		CertDir:        a.certDir(),
 		KeyLength:      keyLength,
 		PreferredChain: preferredChain,
-		// ReloadCmd intentionally empty: 轻舟 pushes the renewed cert to nodes
+		// ReloadCmd intentionally empty: 亲友团 pushes the renewed cert to nodes
 		// itself (see StartCertRenew), rather than relying on a local systemd unit.
 	})
 	if err != nil {

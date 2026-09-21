@@ -861,7 +861,7 @@ func (m *RemoteManager) restartService(ctx context.Context, client *ssh.Client, 
 // sbproc.FindSingBoxBin so a remote node and the panel's own host resolve the
 // same way.
 var singBoxCandidates = []string{
-	"/opt/qingzhou/sing-box",
+	"/opt/qinyoutuan/sing-box",
 	"/usr/local/bin/sing-box",
 	"/usr/bin/sing-box",
 }
@@ -1125,13 +1125,13 @@ func (m *RemoteManager) InstallProbe(ctx context.Context, cfg *ServerConfig, bin
 	}
 	envBody := "QZ_PROBE_SERVER=" + panelURL + "\nQZ_PROBE_TOKEN=" + token + "\n"
 	unitBody := `[Unit]
-Description=Qingzhou Monitor Probe
+Description=QinYouTuan Monitor Probe
 After=network.target
 
 [Service]
 Type=simple
-EnvironmentFile=/etc/qingzhou-probe.env
-ExecStart=/usr/local/bin/qingzhou-probe
+EnvironmentFile=/etc/qinyoutuan-probe.env
+ExecStart=/usr/local/bin/qinyoutuan-probe
 Restart=always
 RestartSec=10
 NoNewPrivileges=true
@@ -1153,14 +1153,14 @@ WantedBy=multi-user.target
 	// `sh -c`, so joining these with && would elevate only the first command for
 	// sudo-based server rows.
 	steps := []string{
-		"install -m 755 " + shellQuote(binPath) + " /usr/local/bin/qingzhou-probe.new",
-		"mv -f /usr/local/bin/qingzhou-probe.new /usr/local/bin/qingzhou-probe",
-		"install -m 600 " + shellQuote(envPath) + " /etc/qingzhou-probe.env",
-		"install -m 644 " + shellQuote(unitPath) + " /etc/systemd/system/qingzhou-probe.service",
+		"install -m 755 " + shellQuote(binPath) + " /usr/local/bin/qinyoutuan-probe.new",
+		"mv -f /usr/local/bin/qinyoutuan-probe.new /usr/local/bin/qinyoutuan-probe",
+		"install -m 600 " + shellQuote(envPath) + " /etc/qinyoutuan-probe.env",
+		"install -m 644 " + shellQuote(unitPath) + " /etc/systemd/system/qinyoutuan-probe.service",
 		"systemctl daemon-reload",
-		"systemctl enable qingzhou-probe",
-		"systemctl restart qingzhou-probe",
-		"systemctl is-active --quiet qingzhou-probe",
+		"systemctl enable qinyoutuan-probe",
+		"systemctl restart qinyoutuan-probe",
+		"systemctl is-active --quiet qinyoutuan-probe",
 	}
 	for _, cmd := range steps {
 		out, err := m.runElevated(ctx, client, cfg, cmd)
@@ -1168,7 +1168,7 @@ WantedBy=multi-user.target
 			return out, fmt.Errorf("安装探针失败（%s）: %w", cmd, err)
 		}
 	}
-	ver, err := m.run(ctx, client, "/usr/local/bin/qingzhou-probe -version")
+	ver, err := m.run(ctx, client, "/usr/local/bin/qinyoutuan-probe -version")
 	return probeInstallSummary(ver, err), nil
 }
 

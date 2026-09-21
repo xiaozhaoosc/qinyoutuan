@@ -177,11 +177,11 @@ func TestClashAIRouteIsAutomaticAndPrecedesDirectRules(t *testing.T) {
 		t.Errorf("AI fallback order = %v, want AI nodes then ordinary fallback", refs)
 	}
 	rules, _ := doc["rules"].([]any)
-	if len(rules) < 2 || rules[0] != "RULE-SET,qingzhou-ai,"+grpAIClash || rules[1] != "GEOSITE,cn,DIRECT" {
+	if len(rules) < 2 || rules[0] != "RULE-SET,qinyoutuan-ai,"+grpAIClash || rules[1] != "GEOSITE,cn,DIRECT" {
 		t.Errorf("AI rule priority = %v", rules)
 	}
 	providers, _ := doc["rule-providers"].(map[string]any)
-	if providers["qingzhou-ai"] == nil {
+	if providers["qinyoutuan-ai"] == nil {
 		t.Error("AI rule provider missing")
 	}
 }

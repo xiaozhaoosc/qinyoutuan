@@ -7,7 +7,7 @@ import (
 
 // A mixed (HTTP/SOCKS5) inbound authenticates by username/password — not the
 // name/uuid shape the circumvention protocols use. Its username must equal the
-// 轻舟 user identity so the v2ray_api stats key matches for per-user metering.
+// 亲友团 user identity so the v2ray_api stats key matches for per-user metering.
 func TestRenderUserMixed(t *testing.T) {
 	u := User{Name: "qz_alice_pkg1", UUID: "ignored", Password: "s3cret"}
 	got := renderUser("mixed", u, map[string]interface{}{})

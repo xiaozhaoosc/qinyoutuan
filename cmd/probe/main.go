@@ -1,12 +1,12 @@
 //go:build linux
 
-// qingzhou-probe is a lightweight monitoring agent for the 轻舟 panel.
+// qinyoutuan-probe is a lightweight monitoring agent for the 亲友团 panel.
 // It collects CPU, memory, disk, network, load, and process metrics from
 // /proc and reports them via HTTP POST to the panel's /api/monitor/report.
 //
 // Usage:
 //
-//	qingzhou-probe -server https://panel.example.com -token <probe_token> [-interval 60] [-insecure]
+//	qinyoutuan-probe -server https://panel.example.com -token <probe_token> [-interval 60] [-insecure]
 package main
 
 import (
@@ -55,7 +55,7 @@ func main() {
 		token = os.Getenv("QZ_PROBE_TOKEN")
 	}
 	if server == "" || token == "" {
-		fmt.Fprintf(os.Stderr, "Usage: qingzhou-probe -server <url> -token <token> [-interval 60] [-insecure]\n")
+		fmt.Fprintf(os.Stderr, "Usage: qinyoutuan-probe -server <url> -token <token> [-interval 60] [-insecure]\n")
 		fmt.Fprintf(os.Stderr, "  Or set QZ_PROBE_SERVER and QZ_PROBE_TOKEN environment variables.\n")
 		os.Exit(1)
 	}
@@ -86,7 +86,7 @@ func main() {
 	}
 
 	reportURL := server + "/api/monitor/report"
-	log.Printf("qingzhou-probe starting: server=%s interval=%ds", server, interval)
+	log.Printf("qinyoutuan-probe starting: server=%s interval=%ds", server, interval)
 
 	// CPU percentage and network speed are deltas between two reads, so the
 	// first sample carries neither. Prime the sampler and throw that one away

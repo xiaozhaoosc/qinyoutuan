@@ -55,7 +55,7 @@ func TestClashCNDirectOwnsRoutingAndDNS(t *testing.T) {
 			t.Errorf("CN-direct rule %q missing: %v", want, rules)
 		}
 	}
-	if rules[0] != "RULE-SET,qingzhou-ai,"+grpAIClash {
+	if rules[0] != "RULE-SET,qinyoutuan-ai,"+grpAIClash {
 		t.Errorf("AI guard lost top priority: %v", rules)
 	}
 	if indexAnyString(rules, "GEOSITE,category-ads-all,REJECT") > indexAnyString(rules, wantCN[0]) {

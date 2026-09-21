@@ -1,5 +1,5 @@
 #!/bin/bash
-# Cross-compile qingzhou-probe for Linux amd64 and arm64.
+# Cross-compile qinyoutuan-probe for Linux amd64 and arm64.
 # Run from the project root: bash cmd/probe/build.sh
 set -e
 

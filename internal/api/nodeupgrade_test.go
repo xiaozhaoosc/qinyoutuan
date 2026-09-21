@@ -146,7 +146,7 @@ func TestLocalInstallEscapesProtectSystem(t *testing.T) {
 	const sr = "/usr/bin/systemd-run"
 	direct := []string{"bash", "-s", "--", "--force"}
 	wrapped := []string{sr, "--pipe", "--wait", "--collect", "--quiet",
-		"--unit=qingzhou-singbox-install", "-p", "RuntimeMaxSec=600", "--",
+		"--unit=qinyoutuan-singbox-install", "-p", "RuntimeMaxSec=600", "--",
 		"bash", "-s", "--", "--force"}
 	for _, tc := range []struct {
 		name     string

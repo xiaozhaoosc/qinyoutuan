@@ -110,7 +110,7 @@ func TestIsNewer(t *testing.T) {
 // outgoing binary a bad release leaves nothing to fall back to.
 func TestBackupAndRestore(t *testing.T) {
 	dir := t.TempDir()
-	exe := filepath.Join(dir, "qingzhou")
+	exe := filepath.Join(dir, "qinyoutuan")
 	if err := os.WriteFile(exe, []byte("old version"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestBackupAndRestore(t *testing.T) {
 // Rolling back when nothing was kept must report the problem rather than
 // silently appear to succeed.
 func TestRestoreBackup_NoBackup(t *testing.T) {
-	exe := filepath.Join(t.TempDir(), "qingzhou")
+	exe := filepath.Join(t.TempDir(), "qinyoutuan")
 	if err := os.WriteFile(exe, []byte("x"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestRestoreBackup_NoBackup(t *testing.T) {
 }
 
 func TestSignatureAssetName(t *testing.T) {
-	if got := signatureAssetName("qingzhou-linux-amd64"); got != "qingzhou-linux-amd64.sig" {
+	if got := signatureAssetName("qinyoutuan-linux-amd64"); got != "qinyoutuan-linux-amd64.sig" {
 		t.Errorf("signatureAssetName = %q", got)
 	}
 }

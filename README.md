@@ -1,4 +1,4 @@
-# 轻舟 (QingZhou)
+# 亲友团 (QinYouTuan)
 
 > 面向终端用户的**轻量级多用户代理订阅管理面板** —— 单文件部署，自管原生 sing-box，把「人 / 钱 / 节点 / 订阅 / 统计」一站式管起来。
 
@@ -8,7 +8,7 @@
 ![Single Binary](https://img.shields.io/badge/deploy-single%20binary-success)
 ![Platform](https://img.shields.io/badge/platform-Linux%20amd64%20%7C%20arm64-lightgrey)
 
-轻舟是一个**开箱即用的代理业务前台**：管理员在可视化后台管理节点、套餐和用户，普通用户注册后用积分自助购买流量包 / 订阅套餐，拿到一条**多端自适应**的订阅链接。真正承载流量的是 **sing-box**（作为独立进程运行），轻舟负责生成并下发它的配置、采集每用户流量、并把整套业务（注册登录、计费、订阅、统计、运营）包好。
+亲友团是一个**开箱即用的代理业务前台**：管理员在可视化后台管理节点、套餐和用户，普通用户注册后用积分自助购买流量包 / 订阅套餐，拿到一条**多端自适应**的订阅链接。真正承载流量的是 **sing-box**（作为独立进程运行），亲友团负责生成并下发它的配置、采集每用户流量、并把整套业务（注册登录、计费、订阅、统计、运营）包好。
 
 **它适合谁**：想给一小群人（家庭 / 朋友 / 小团队）自建、自管代理订阅服务，又不想被臃肿面板和一堆依赖折腾的人。**一台 1H1G 的小机器**就能把面板和落地节点一起跑起来。
 
@@ -17,7 +17,7 @@
 ## ✨ 核心优势
 
 - **🪶 单文件部署** —— 一个 Go 二进制内嵌了 Vue 前端和 SQLite 驱动，无需 Node 构建、无需 CGO、无需外部数据库。丢到服务器上配个 systemd 就能跑。
-- **🔌 不依赖任何外部面板** —— 轻舟**自管原生 sing-box**：面板直接生成 `config.json`、下发、reload，并通过 sing-box 官方 `v2ray_api` 读回每用户流量。不套壳、不二次代理别的面板。
+- **🔌 不依赖任何外部面板** —— 亲友团**自管原生 sing-box**：面板直接生成 `config.json`、下发、reload，并通过 sing-box 官方 `v2ray_api` 读回每用户流量。不套壳、不二次代理别的面板。
 - **🎛️ 9 协议纯可视化** —— 下拉、开关、零手写 JSON 即可管理 TLS / Reality 和入站，覆盖 **vless / vmess / trojan / tuic / hysteria2 / shadowsocks / anytls / hysteria**，外加 **mixed（HTTP/SOCKS5 代理账号）**；含传输层（ws/grpc/httpupgrade）与 uTLS / ALPN / Mux / Brutal。
 - **📜 证书中心** —— 面板内一键 **ACME 签发真实证书**（Let's Encrypt · Cloudflare DNS-01，只填一个 CF Token），或粘贴已有证书 / 一键自签；证书全局复用、被入站引用、**到期自动续期并推送到各落地机**。
 - **🌉 第三方静态 IP 出口** —— 入站可指定一个购买来的 **SOCKS5 / HTTP 代理**作为出口，流量经它出网、出口 IP 即代理 IP；密码库内加密、失效则「fail-closed」不回落直连。
@@ -106,7 +106,7 @@
                           └────────┬─────────┘
                                    │  反向代理
                        ┌───────────▼────────────┐
-                       │   轻舟面板 (单 Go 二进制) │   ← 内嵌 Vue 前端 + SQLite
+                       │   亲友团面板 (单 Go 二进制) │   ← 内嵌 Vue 前端 + SQLite
                        │   业务 / 订阅 / 统计 / 管理 │
                        └───┬───────────────┬─────┘
               生成配置+SSH下发 │               │ v2ray_api gRPC 读流量
@@ -117,7 +117,7 @@
 ```
 
 - **面板与 sing-box 可同机**（最简单）**，也可分离**：面板在中心机，落地 sing-box 在多台机器，面板用 SSH 下发。
-- 轻舟生成 sing-box 的 `config.json` → `sing-box check` 校验 → 原子替换 → reload；再按 `v2ray_api` 采集每用户上下行流量。
+- 亲友团生成 sing-box 的 `config.json` → `sing-box check` 校验 → 原子替换 → reload；再按 `v2ray_api` 采集每用户上下行流量。
 - **中转链路（可选）**：某个入站可指定「落地入站」，其流量经出站转发到另一台机器的落地入站再出网 —— `客户端 → 线路机入站 → 落地机入站 → 互联网`；可**多级串联**，末端还能接第三方代理出口，per-user 计量在入口侧完成。
 
 ---
@@ -144,19 +144,19 @@ bash <(curl -fsSL https://raw.githubusercontent.com/mllt992/qing-zhou/main/insta
 
 常用选项：`--version vX.Y.Z` 装指定版本；`--force` 同版本强制重装；`--proxy https://mirror.ghproxy.com/` 国内下载加速。装完后升级可重跑脚本，或直接用面板内「在线更新」。
 
-安装时会问「面板打算怎么访问」：**直接用 IP:端口打开选 1**（监听 `0.0.0.0:8081`，默认项）；前面有 nginx/caddy 反代才选 2（监听 `127.0.0.1:8081`）。选错了不用重装，改配置重启即可：
+安装时会问「面板打算怎么访问」：**直接用 IP:端口打开选 1**（监听 `0.0.0.0:8086`，默认项）；前面有 nginx/caddy 反代才选 2（监听 `127.0.0.1:8086`）。选错了不用重装，改配置重启即可：
 
 ```bash
-sed -i 's|^QZ_LISTEN=.*|QZ_LISTEN=0.0.0.0:8081|' /opt/qingzhou/qingzhou.env && systemctl restart qingzhou
+sed -i 's|^QZ_LISTEN=.*|QZ_LISTEN=0.0.0.0:8086|' /opt/qinyoutuan/qinyoutuan.env && systemctl restart qinyoutuan
 ```
 
-**卸载**（脚本安装时已把自己存了一份到 `/opt/qingzhou/install.sh`）：
+**卸载**（脚本安装时已把自己存了一份到 `/opt/qinyoutuan/install.sh`）：
 
 ```bash
-bash /opt/qingzhou/install.sh uninstall
+bash /opt/qinyoutuan/install.sh uninstall
 ```
 
-先停服务、删 systemd 与二进制，再单独确认是否连数据库和配置一起删（输 `yes` 才删 `/opt/qingzhou`）。老版本装的没有这份副本，直接 `bash <(curl -fsSL https://raw.githubusercontent.com/mllt992/qing-zhou/main/install.sh) uninstall`。
+先停服务、删 systemd 与二进制，再单独确认是否连数据库和配置一起删（输 `yes` 才删 `/opt/qinyoutuan`）。老版本装的没有这份副本，直接 `bash <(curl -fsSL https://raw.githubusercontent.com/mllt992/qing-zhou/main/install.sh) uninstall`。
 
 ### 一、Docker 一键部署（最省事）
 
@@ -166,10 +166,10 @@ bash /opt/qingzhou/install.sh uninstall
 git clone https://github.com/mllt992/qing-zhou.git && cd qing-zhou
 # 改 docker-compose.yml 里的 QZ_PUBLIC_BASE 与 QZ_SECRET_KEY(openssl rand -hex 32)
 docker compose up -d
-docker compose logs -f qingzhou     # 首启打印随机管理员密码（未设 QZ_ADMIN_PASS 时）
+docker compose logs -f qinyoutuan     # 首启打印随机管理员密码（未设 QZ_ADMIN_PASS 时）
 ```
 
-或直接用镜像：`docker run -d -p 8081:8081 -e QZ_SECRET_KEY=$(openssl rand -hex 32) -v qingzhou-data:/data ghcr.io/mllt992/qing-zhou:latest`。**Docker 用「拉新镜像 + 重建容器」升级**，详见 [Wiki · Docker 部署](https://github.com/mllt992/qing-zhou/wiki/Docker-部署)。
+或直接用镜像：`docker run -d -p 8081:8086 -e QZ_SECRET_KEY=$(openssl rand -hex 32) -v qinyoutuan-data:/data ghcr.io/mllt992/qing-zhou:latest`。**Docker 用「拉新镜像 + 重建容器」升级**，详见 [Wiki · Docker 部署](https://github.com/mllt992/qing-zhou/wiki/Docker-部署)。
 
 通过当前发布工作流新构建的 GHCR 镜像会携带构建来源证明（provenance）与 SBOM，并标记
 对应的源码 revision。可用 Buildx 查看镜像清单和证明；把示例版本换成实际安装的 tag：
@@ -186,7 +186,7 @@ docker buildx imagetools inspect ghcr.io/mllt992/qing-zhou:vX.Y.Z --format '{{js
 
 ```bash
 cd frontend && npm install && npx vite build && cd ..
-QZ_LISTEN=127.0.0.1:8081 go run .
+QZ_LISTEN=127.0.0.1:8086 go run .
 ```
 
 Windows PowerShell 可直接用 `./start.ps1`（已设好上述环境变量）。
@@ -200,7 +200,7 @@ Windows PowerShell 可直接用 `./start.ps1`（已设好上述环境变量）�
 
 > 用 `npx vite build` 而不是 `npm run build`：后者会先跑 `vue-tsc`，而仓库目前有一批与业务无关的既有类型错误，CI（`release.yml`）用的也是 `npx vite build`。
 
-浏览器访问 <http://127.0.0.1:8081>。**首次启动**会自动初始化数据库并创建管理员账号：
+浏览器访问 <http://127.0.0.1:8086>。**首次启动**会自动初始化数据库并创建管理员账号：
 
 - 用户名默认 `mllt992`（可用 `QZ_ADMIN_USER` 指定）
 - 未设 `QZ_ADMIN_PASS` 时，会**随机生成密码并打印到启动日志**（请到终端查看并首登后立即改密）
@@ -210,7 +210,7 @@ Windows PowerShell 可直接用 `./start.ps1`（已设好上述环境变量）�
 ```bash
 cd frontend && npx vite build && cd ..     # 前端产物会被编译进二进制，必须先构建
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-  go build -trimpath -ldflags "-s -w" -o qingzhou .
+  go build -trimpath -ldflags "-s -w" -o qinyoutuan .
 ```
 
 不设 `QZ_WEB_DIR` 时使用内嵌前端资源，**单文件即可部署**。注意 `frontend/dist` 是在 `go build` 时被内嵌的——改了前端只重编 Go 是没用的，要先 `vite build`。
@@ -228,10 +228,10 @@ curl -fsSL https://<你的面板域名>/install-singbox.sh | bash
 #    配额永不生效，且界面上看不出异常。脚本下载失败时会回退官方版并明确告警。
 
 # 2) 放置二进制并写配置
-install -Dm755 qingzhou /opt/qingzhou/qingzhou
-cat >/opt/qingzhou/qingzhou.env <<'EOF'
-QZ_LISTEN=127.0.0.1:8081
-QZ_DB=/opt/qingzhou/qingzhou.db
+install -Dm755 qinyoutuan /opt/qinyoutuan/qinyoutuan
+cat >/opt/qinyoutuan/qinyoutuan.env <<'EOF'
+QZ_LISTEN=127.0.0.1:8086
+QZ_DB=/opt/qinyoutuan/qinyoutuan.db
 QZ_SECRET_KEY=<openssl rand -hex 32 生成>
 QZ_PUBLIC_BASE=https://<你的面板域名>
 QZ_SINGBOX_BIN=/usr/local/bin/sing-box
@@ -239,13 +239,13 @@ QZ_SINGBOX_CONFIG=/etc/sing-box/config.json
 QZ_SINGBOX_UNIT=sing-box
 QZ_SINGBOX_V2RAY=127.0.0.1:18080
 EOF
-chmod 600 /opt/qingzhou/qingzhou.env
+chmod 600 /opt/qinyoutuan/qinyoutuan.env
 
 # 3) 安装 systemd 服务
-cp deploy/qingzhou.service /etc/systemd/system/
-systemctl daemon-reload && systemctl enable --now qingzhou
+cp deploy/qinyoutuan.service /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now qinyoutuan
 
-# 4) 用 Nginx/Caddy 反代到 127.0.0.1:8081，配好 443 证书（转发 Host 与 X-Forwarded-*）
+# 4) 用 Nginx/Caddy 反代到 127.0.0.1:8086，配好 443 证书（转发 Host 与 X-Forwarded-*）
 ```
 
 > 完整部署、多落地、协议选型、排错见 **[部署与配置手册](docs/部署与配置手册.md)**。
@@ -279,8 +279,8 @@ systemctl daemon-reload && systemctl enable --now qingzhou
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `QZ_LISTEN` | `0.0.0.0:8081` | 监听地址，默认公网可达（明文 HTTP，建议尽快套反代 + 证书）。**前置 nginx/Caddy 时改成 `127.0.0.1:8081`**，面板就只有本机连得上。升级时若配置里没有这一项，一键脚本会按原行为写入回环，不会替你扩大监听范围 |
-| `QZ_DB` | `qingzhou.db` | SQLite 数据库文件路径（相对路径基于进程工作目录） |
+| `QZ_LISTEN` | `0.0.0.0:8086` | 监听地址，默认公网可达（明文 HTTP，建议尽快套反代 + 证书）。**前置 nginx/Caddy 时改成 `127.0.0.1:8086`**，面板就只有本机连得上。升级时若配置里没有这一项，一键脚本会按原行为写入回环，不会替你扩大监听范围 |
+| `QZ_DB` | `qinyoutuan.db` | SQLite 数据库文件路径（相对路径基于进程工作目录） |
 | `QZ_PUBLIC_BASE` | 设置页/请求推断 | 面板对外地址（订阅链接、探针安装、邮件链接、sing-box 安装命令），如 `https://node.example.com`。也可在「系统设置 → 面板访问地址」填；本变量优先，且设了之后设置页对应字段变只读 |
 | `QZ_TRUSTED_PROXIES` | 空（仅信回环） | 受信任反代的 IP / CIDR，逗号分隔。**反代不在本机时必须设**，否则转发头被忽略，限流与链接生成会拿到反代的 IP |
 | `QZ_PROBE_DIR` | `cmd/probe/dist` | 探针二进制目录，面板据此提供下载与「一键安装」。二进制部署须设为绝对目录（放入 `probe-linux-amd64/arm64`），否则探针安装 404。`install.sh`、面板「在线更新」、以及新版本启动时都会把该目录对齐到当前 release，避免只升面板、一键安装仍下发旧探针 |
@@ -299,7 +299,7 @@ systemctl daemon-reload && systemctl enable --now qingzhou
 | `QZ_SINGBOX_RECONCILE_INTERVAL` | `60m` | 绕过摘要缓存，核对远端配置文件与 sing-box 运行状态的周期；可在设置页在线修改，本变量优先 |
 | `QZ_SMTP_HOST` / `PORT` / `USER` / `PASS` / `FROM` / `FROM_NAME` / `SECURITY` | — | SMTP 配置（也可在面板「设置」页填，密码加密存储） |
 
-> 完整示例见 [`deploy/qingzhou.env.example`](deploy/qingzhou.env.example)。
+> 完整示例见 [`deploy/qinyoutuan.env.example`](deploy/qinyoutuan.env.example)。
 
 ---
 

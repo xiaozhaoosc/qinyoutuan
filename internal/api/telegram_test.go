@@ -31,7 +31,7 @@ func newTelegramAPI(t *testing.T) (*API, *store.Store, *[]tgMsg) {
 	if err := st.SetSetting("telegram_bot_token", "TEST:token"); err != nil {
 		t.Fatal(err)
 	}
-	if err := st.SetSetting("telegram_bot_username", "qingzhou_bot"); err != nil {
+	if err := st.SetSetting("telegram_bot_username", "qinyoutuan_bot"); err != nil {
 		t.Fatal(err)
 	}
 	if err := st.SetSetting("public_base", "https://panel.example"); err != nil {
@@ -111,7 +111,7 @@ func TestTelegramBindToken_RequiresBot(t *testing.T) {
 func TestTelegramBindToken_ReturnsDeepLink(t *testing.T) {
 	a, st, _ := newTelegramAPI(t)
 	a.tgClientFn = func(token string) *telegram.Client {
-		return telegramTestClient(t, token, "qingzhou_bot")
+		return telegramTestClient(t, token, "qinyoutuan_bot")
 	}
 	uid, err := st.CreateUser(store.NewUser{Username: "u1", PasswordHash: "x"})
 	if err != nil {
@@ -131,7 +131,7 @@ func TestTelegramBindToken_ReturnsDeepLink(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatal(err)
 	}
-	if resp.Data.Bot != "qingzhou_bot" || !strings.HasPrefix(resp.Data.URL, "https://t.me/qingzhou_bot?start=") {
+	if resp.Data.Bot != "qinyoutuan_bot" || !strings.HasPrefix(resp.Data.URL, "https://t.me/qinyoutuan_bot?start=") {
 		t.Fatalf("link = %+v", resp.Data)
 	}
 }
@@ -155,7 +155,7 @@ func TestTelegramTestConnectionUsesCandidateToken(t *testing.T) {
 	if saved, _ := st.GetSetting("telegram_bot_token"); saved != "TEST:token" {
 		t.Fatalf("candidate persisted as %q", saved)
 	}
-	if cached, _ := st.GetSetting("telegram_bot_username"); cached != "qingzhou_bot" {
+	if cached, _ := st.GetSetting("telegram_bot_username"); cached != "qinyoutuan_bot" {
 		t.Fatalf("candidate username cached as %q", cached)
 	}
 }
@@ -252,7 +252,7 @@ func TestTelegramCustomCommandRepliesAndAppearsInHelp(t *testing.T) {
 	}
 
 	a.handleTelegramUpdate(telegram.Update{UpdateID: 1, Message: &telegram.Message{
-		From: &telegram.User{ID: 41}, Chat: telegram.Chat{ID: 41, Type: "private"}, Text: "/contact@qingzhou_bot ignored",
+		From: &telegram.User{ID: 41}, Chat: telegram.Chat{ID: 41, Type: "private"}, Text: "/contact@qinyoutuan_bot ignored",
 	}})
 	if len(*inbox) != 1 || !strings.Contains((*inbox)[0].html, "alice") ||
 		!strings.Contains((*inbox)[0].html, `<a href="https://panel.example">`) {
@@ -624,7 +624,7 @@ func TestNotifyTrafficMutedSweepMaintainsRecoveryState(t *testing.T) {
 }
 
 func TestSplitTelegramCommand(t *testing.T) {
-	cmd, arg := splitTelegramCommand("/start@qingzhou_bot abc")
+	cmd, arg := splitTelegramCommand("/start@qinyoutuan_bot abc")
 	if cmd != "/start" || arg != "abc" {
 		t.Fatalf("got %q %q", cmd, arg)
 	}

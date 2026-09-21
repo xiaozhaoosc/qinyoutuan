@@ -10,7 +10,7 @@ import (
 )
 
 // LinkParams holds everything needed to render a client share-link for a
-// self-built node, so 轻舟 can build subscriptions from its own data instead of
+// self-built node, so 亲友团 can build subscriptions from its own data instead of
 // fetching them from sing-box's sub server.
 type LinkParams struct {
 	Type     string // vless | tuic | hysteria2
@@ -85,7 +85,7 @@ type LinkParams struct {
 	HopIntervalMax      string // duration upper bound for hop randomization
 
 	// TCP dial tuning (TCP-based protocols only). TCP Fast Open and MPTCP each
-	// need BOTH ends enabled to do anything, so 轻舟 mirrors the inbound's
+	// need BOTH ends enabled to do anything, so 亲友团 mirrors the inbound's
 	// setting onto the client link.
 	TCPFastOpen bool // -> tcp_fast_open / tfo
 	MPTCP       bool // -> tcp_multi_path / mptcp
@@ -108,8 +108,8 @@ type LinkParams struct {
 	// every attempt runs out its own timeout before falling back to TCP.
 	//
 	// Carried as the custom `qz-udp=block` param (same convention as tfo/mux:
-	// 轻舟's own renderers read it back, unknown-key-tolerant clients ignore
-	// it), which 轻舟's renderers turn into clash `udp: false`, sing-box
+	// 亲友团's own renderers read it back, unknown-key-tolerant clients ignore
+	// it), which 亲友团's renderers turn into clash `udp: false`, sing-box
 	// `"network": "tcp"` and Surge `udp-relay=false` — the client then refuses
 	// UDP locally, instantly, and applications take their TCP path without
 	// waiting on a timeout. Per-node by construction: nodes on other exits are
@@ -131,7 +131,7 @@ const tuicUDPRelayModeNative = "native"
 
 // tuningQuery renders the TCP/multiplex tuning params shared by the URL-style
 // TCP protocols (vless/trojan). These are custom query keys understood by
-// 轻舟's own subscription renderer; unknown-key-tolerant clients ignore them.
+// 亲友团's own subscription renderer; unknown-key-tolerant clients ignore them.
 // allowMux gates multiplex: it must be dropped when xtls-rprx-vision flow is
 // active (sing-box rejects multiplex together with vision).
 func (p LinkParams) tuningQuery(allowMux bool) []string {
@@ -196,7 +196,7 @@ func (p LinkParams) transportQuery() []string {
 //
 // First, plain concatenation is not actually harmless here. Go's url.Parse is
 // forgiving — it splits host and port at the *last* colon, so it recovers
-// "…@2001:db8::1:443" correctly and 轻舟's own pipeline round-trips it — but
+// "…@2001:db8::1:443" correctly and 亲友团's own pipeline round-trips it — but
 // that tolerance is Go's, not the spec's. v2rayN, mihomo and sing-box parse the
 // authority per RFC 3986, where an unbracketed IPv6 literal is malformed. So the
 // symptom is a node that looks fine in the panel and fails only in the client.
@@ -367,7 +367,7 @@ func BuildShareLink(p LinkParams) string {
 			}
 			if p.Insecure {
 				// Not part of the v2rayN vmess schema (it has no such key), but
-				// 轻舟's own renderers read it back via Proxy.param, which falls
+				// 亲友团's own renderers read it back via Proxy.param, which falls
 				// through to the vmess JSON map. Clients that don't know it ignore it.
 				m["allowInsecure"] = "1"
 			}
@@ -375,7 +375,7 @@ func BuildShareLink(p LinkParams) string {
 			m["tls"] = ""
 		}
 		// Custom tuning keys (ignored by clients that don't understand them);
-		// 轻舟's own Clash/sing-box renderers read them back.
+		// 亲友团's own Clash/sing-box renderers read them back.
 		if p.TCPFastOpen {
 			m["tfo"] = "1"
 		}

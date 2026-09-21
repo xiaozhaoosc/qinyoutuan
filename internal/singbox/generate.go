@@ -1,5 +1,5 @@
-// Package singbox generates a sing-box server config.json from 轻舟's own data
-// (B2 integration model: 轻舟 generates the config, sing-box runs as a separate
+// Package singbox generates a sing-box server config.json from 亲友团's own data
+// (B2 integration model: 亲友团 generates the config, sing-box runs as a separate
 // process, per-user stats are read back over the v2ray_api gRPC StatsService).
 //
 // The assembly model: each inbound carries a pre-rendered sing-box JSON body;
@@ -32,7 +32,7 @@ const DefaultBaseConfig = `{
   "route": {"rules": [], "final": "direct"}
 }`
 
-// User is one 轻舟 user's proxy credentials. A single user can appear in several
+// User is one 亲友团 user's proxy credentials. A single user can appear in several
 // inbounds; each inbound renders only the fields its protocol needs.
 type User struct {
 	Name     string // identity used in users[] AND as the v2ray stats key
@@ -48,7 +48,7 @@ type Inbound struct {
 	Users []User
 }
 
-// renderUser maps a 轻舟 user to the protocol-specific user object sing-box
+// renderUser maps a 亲友团 user to the protocol-specific user object sing-box
 // expects. hasTLS/hasTransport gate the VLESS flow: xtls-rprx-vision is only
 // valid on raw-TLS (Reality) VLESS — it must be dropped when there is no TLS or
 // when a transport (ws/grpc/...) is present (matches sing-box's stripVision rule).
@@ -93,7 +93,7 @@ func renderUser(t string, u User, ib map[string]interface{}) map[string]interfac
 		return map[string]interface{}{"name": u.Name, "auth_str": u.Password}
 	case "mixed":
 		// mixed inbound (HTTP + SOCKS5) authenticates by username/password. The
-		// 轻舟 user identity doubles as the username so the v2ray_api stats key
+		// 亲友团 user identity doubles as the username so the v2ray_api stats key
 		// (which lists u.Name) matches the authenticated user for per-user metering.
 		return map[string]interface{}{"username": u.Name, "password": u.Password}
 	default:
@@ -114,7 +114,7 @@ func SSKeyLen(method string) int {
 }
 
 // DeriveSSKey deterministically derives a valid base64 shadowsocks-2022 key of
-// the method's required length from the user's secret, so 轻舟's single
+// the method's required length from the user's secret, so 亲友团's single
 // per-user secret maps cleanly onto SS without storing extra credentials.
 func DeriveSSKey(secret, method string) string {
 	h := sha256.Sum256([]byte("qz-ss:" + secret))
@@ -314,7 +314,7 @@ func GenerateConfigWithOptions(base json.RawMessage, inbounds []Inbound, opt Opt
 // the admin looking at the line instead of the rule.
 //
 // The failure is invisible to whoever flips the switch, because it depends on
-// the client: 轻舟's own Clash and sing-box subscriptions configure DoH/DoT
+// the client: 亲友团's own Clash and sing-box subscriptions configure DoH/DoT
 // (TCP), so those users see nothing wrong, while a v2rayN/v2rayNG user — who
 // gets the bare link list, no DNS config, and whose client defaults to UDP —
 // loses everything. Same panel, same node, same egress; the admin hears "some

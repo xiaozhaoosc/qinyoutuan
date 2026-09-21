@@ -25,7 +25,7 @@ export const useConfigStore = defineStore('config', () => {
   const config = ref<SiteConfig>({
     oauth2_enabled: false,
     oauth2_name: '认证中心',
-    site_name: '轻舟',
+    site_name: '亲友团',
     site_description: '',
     register_mode: 'open',
     registration_open: true,

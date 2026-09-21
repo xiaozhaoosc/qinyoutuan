@@ -1,6 +1,6 @@
 // Command sign generates the release signing key and signs release assets.
 //
-// Only whoever publishes releases needs this. Using or building 轻舟 does not:
+// Only whoever publishes releases needs this. Using or building 亲友团 does not:
 // a source build has no key compiled in and therefore requires no signature.
 //
 // One-time, on your own machine (NOT in CI):
@@ -14,9 +14,9 @@
 //
 // Signing (what CI runs):
 //
-//	QZ_SIGNING_KEY=<private> go run ./tools/sign qingzhou-linux-amd64
+//	QZ_SIGNING_KEY=<private> go run ./tools/sign qinyoutuan-linux-amd64
 //
-// writes qingzhou-linux-amd64.sig next to it.
+// writes qinyoutuan-linux-amd64.sig next to it.
 package main
 
 import (

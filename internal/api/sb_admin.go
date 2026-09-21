@@ -115,7 +115,7 @@ func (a *API) handleAdminQuickSelfSignedTls(w http.ResponseWriter, r *http.Reque
 		"key":         keyPEM,
 	}
 	// insecure=true on the client side: a self-signed cert won't chain to a public
-	// CA, so clients (and 轻舟's own link renderers) must skip verification.
+	// CA, so clients (and 亲友团's own link renderers) must skip verification.
 	client := map[string]interface{}{
 		"insecure": true,
 		"utls":     map[string]interface{}{"enabled": true, "fingerprint": "chrome"},
@@ -1459,22 +1459,28 @@ func (a *API) handleAdminListSbInbounds(w http.ResponseWriter, r *http.Request) 
 	out := make([]map[string]interface{}, 0, len(list))
 	for _, n := range list {
 		m := map[string]interface{}{
-			"id":          n.ID,
-			"server_id":   n.ServerID,
-			"type":        n.Type,
-			"tag":         n.Tag,
-			"listen":      n.Listen,
-			"listen_port": n.ListenPort,
-			"tls_id":              n.TlsID,
-			"options":             n.Options,
-			"enabled":             n.Enabled,
-			"sort_order":          n.SortOrder,
-			"upstream_inbound_id": n.UpstreamInboundID,
-			"egress_id":           n.EgressID,
-			"created_at":          n.CreatedAt,
-			"updated_at":          n.UpdatedAt,
-			"user_count":          len(usersByTag[n.Tag]),
-		}
+				"id":          n.ID,
+				"server_id":   n.ServerID,
+				"type":        n.Type,
+				"tag":         n.Tag,
+				"listen":      n.Listen,
+				"listen_port": n.ListenPort,
+				"tls_id":              n.TlsID,
+				"options":             n.Options,
+				"enabled":             n.Enabled,
+				"sort_order":          n.SortOrder,
+				"upstream_inbound_id": n.UpstreamInboundID,
+				"egress_id":           n.EgressID,
+				"created_at":          n.CreatedAt,
+				"updated_at":          n.UpdatedAt,
+				"user_count":          len(usersByTag[n.Tag]),
+				// Argo/Cloudflare tunnel exposure + its live hostname.
+				"argo_enabled": n.ArgoEnabled,
+				"argo_mode":    n.ArgoMode,
+				"argo_auth":    n.ArgoAuth,
+				"argo_domain":  n.ArgoDomain,
+				"argo_host":    n.ArgoHost,
+			}
 		out = append(out, m)
 	}
 	ok(w, out)
@@ -1551,6 +1557,29 @@ func (a *API) handleAdminSaveSbInbound(w http.ResponseWriter, r *http.Request) {
 			fail(w, http.StatusBadRequest, "mixed 代理不支持 Reality，请选普通 TLS 证书或留空")
 			return
 		}
+	}
+	// Cloudflare Argo exposure: only a ws-transport vmess inbound can be fronted
+	// by the quick/fixed tunnel (cloudflared dials its loopback ws listener), and
+	// the two modes have distinct requirements.
+	if n.ArgoEnabled {
+		switch n.ArgoMode {
+		case "temporary":
+		case "fixed":
+			if n.ArgoAuth == "" || n.ArgoDomain == "" {
+				fail(w, http.StatusBadRequest, "固定 Argo 隧道需同时填写 token 与域名")
+				return
+			}
+		default:
+			fail(w, http.StatusBadRequest, "Argo 模式仅支持 temporary 或 fixed")
+			return
+		}
+		if n.Type != "vmess" {
+			fail(w, http.StatusBadRequest, "Argo 隧道目前仅支持 vmess(ws) 入站")
+			return
+		}
+	} else if n.ArgoMode != "" || n.ArgoAuth != "" || n.ArgoDomain != "" {
+		// Turning the switch off clears any leftover argo fields in the same save.
+		n.ArgoMode, n.ArgoAuth, n.ArgoDomain = "", "", ""
 	}
 	// 端口冲突检测：同服务器同端口不允许重复
 	if id := chi.URLParam(r, "id"); id != "" {

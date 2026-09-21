@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 轻舟面板 · sing-box 一键安装 / 检测脚本
+# 亲友团面板 · sing-box 一键安装 / 检测脚本
 #
 #   curl -fsSL https://<你的面板域名>/install-singbox.sh | bash
 #
@@ -12,7 +12,7 @@
 #   3. 应用网络内核调优（BBR + fq + 缓冲区 + somaxconn 等）
 #   4. 最后打印一段「服务器」信息，照着填进面板即可接管
 #
-# 选项： --force 强制重装   --no-tune 跳过内核调优
+# 选项： --force 强制重装   --no-tune 跳过内核调优   --with-argo 额外安装 cloudflared
 set -euo pipefail
 
 BIN=/usr/local/bin/sing-box
@@ -20,8 +20,8 @@ CONF_DIR=/etc/sing-box
 CONF=$CONF_DIR/config.json
 UNIT=sing-box
 V2RAY_LISTEN=127.0.0.1:18080
-FORCE=0; TUNE=1
-for a in "$@"; do case "$a" in --force) FORCE=1;; --no-tune) TUNE=0;; esac; done
+FORCE=0; TUNE=1; WITH_ARGO=0
+for a in "$@"; do case "$a" in --force) FORCE=1;; --no-tune) TUNE=0;; --with-argo) WITH_ARGO=1;; esac; done
 
 c() { printf '\033[%sm%s\033[0m' "$1" "$2"; }
 info() { echo "$(c '1;36' '›') $*"; }
@@ -52,7 +52,7 @@ apply_tuning() {
   [ "$TUNE" = 1 ] || { warn "跳过内核调优（--no-tune）"; return; }
   info "应用网络内核调优 → /etc/sysctl.d/99-singbox.conf"
   cat >/etc/sysctl.d/99-singbox.conf <<'SYSCTL'
-# 轻舟 · sing-box 网络调优
+# 亲友团 · sing-box 网络调优
 net.core.default_qdisc = fq
 net.ipv4.tcp_congestion_control = bbr
 net.core.rmem_max = 67108864
@@ -127,6 +127,46 @@ install_singbox_upstream() {
   ok "sing-box 已安装 → $BIN ($("$BIN" version | head -1))"
 }
 
+# cloudflared 是 Cloudflare 官方发布的开源静态二进制，面板不自建、不代持、
+# 也不进自己的 release（与 sing-box/probe 这种"必须自建"的交付链不同），所以
+# 直接按架构拉 Cloudflare 官方 GitHub release 的最新版即可。临时/固定 Argo 隧道
+# 都由它承担，装成独立二进制，不依赖 sing-box 的 systemd 单元。
+cf_arch_tag() {
+  case "$(uname -m)" in
+    x86_64|amd64) echo amd64;;
+    aarch64|arm64) echo arm64;;
+    armv7l|armv7) echo arm;;
+    *) return 1;;
+  esac
+}
+
+# 仅在 --with-argo 时确保 cloudflared 就位。已装则跳过，未装则拉官方 latest。
+maybe_install_cloudflared() {
+  [ "$WITH_ARGO" = 1 ] || return 0
+  if [ -x /usr/local/bin/cloudflared ] && /usr/local/bin/cloudflared --version >/dev/null 2>&1; then
+    ok "cloudflared 已安装：$(/usr/local/bin/cloudflared --version | head -1)"
+    return 0
+  fi
+  local arch tag url tmp
+  arch=$(cf_arch_tag) || { warn "当前架构不支持 cloudflared 下载（仅 x86_64/aarch64/armv7）"; return 0; }
+  info "查询 cloudflared 最新版本…"
+  tag=$(curl -fsSL https://api.github.com/repos/cloudflare/cloudflared/releases/latest \
+        | grep -oE '"tag_name":\s*"[^"]+"' | head -1 | grep -oE '[0-9]{4}\.[0-9]+\.[0-9]+') \
+        || die "无法获取 cloudflared 版本（网络/GitHub 受限？可稍后重跑本脚本加 --with-argo）"
+  url="https://github.com/cloudflare/cloudflared/releases/download/${tag}/cloudflared-linux-${arch}"
+  info "下载 cloudflared ${tag}（$arch）…"
+  tmp=$(mktemp)
+  if curl -fL# "$url" -o "$tmp"; then
+    install -m755 "$tmp" /usr/local/bin/cloudflared
+    rm -f "$tmp"
+    ok "cloudflared 已安装 → /usr/local/bin/cloudflared（$(/usr/local/bin/cloudflared --version | head -1)）"
+  else
+    rm -f "$tmp"
+    warn "cloudflared 下载失败：$url"
+    warn "Argo 隧道需要它才能工作；可稍后重跑加 --with-argo"
+  fi
+}
+
 write_placeholder_conf() {
   mkdir -p "$CONF_DIR"
   if [ -s "$CONF" ] && "$BIN" check -c "$CONF" >/dev/null 2>&1; then
@@ -148,7 +188,7 @@ write_unit() {
   info "配置 systemd 服务：$UNIT"
   cat >/etc/systemd/system/${UNIT}.service <<UNIT
 [Unit]
-Description=sing-box service (managed by 轻舟)
+Description=sing-box service (managed by 亲友团)
 After=network.target nss-lookup.target
 [Service]
 ExecStart=$BIN run -c $CONF
@@ -183,6 +223,13 @@ summary() {
   v2ray_api 监听      : $V2RAY_LISTEN     （统计用，面板自动写入，无需改）
   版本               : $ver
 TXT
+  if [ "$WITH_ARGO" = 1 ]; then
+    if [ -x /usr/local/bin/cloudflared ]; then
+      echo "  cloudflared(Argo) : /usr/local/bin/cloudflared（$(/usr/local/bin/cloudflared --version | head -1 | awk '{print $2}')）"
+    else
+      echo "  cloudflared(Argo) : 未安装（重跑加 --with-argo 拉取官方版本）"
+    fi
+  fi
   echo "$(c '1;32' '═══════════════════════════════════════════════════')"
   echo "提示：本机面板可直接用以上默认值；远程落地机需在面板新增「服务器」并填写。"
 }
@@ -204,6 +251,7 @@ main() {
     apply_tuning
     write_placeholder_conf
     write_unit
+    maybe_install_cloudflared
     summary
     exit 0
   fi
@@ -211,6 +259,7 @@ main() {
   apply_tuning
   write_placeholder_conf
   write_unit
+  maybe_install_cloudflared
   summary
 }
 main

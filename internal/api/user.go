@@ -155,7 +155,7 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		link := a.publicBase(r) + "/api/auth/verify?token=" + token
-		a.deliver(req.Email, "验证你的邮箱 - 轻舟", verifyEmailHTML(link), link)
+		a.deliver(req.Email, "验证你的邮箱 - 亲友团", verifyEmailHTML(link), link)
 		ok(w, J{"need_verify": true, "message": "注册成功，请查收验证邮件后激活账号"})
 		return
 	}
@@ -926,7 +926,7 @@ func (a *API) handleSub(w http.ResponseWriter, r *http.Request) {
 	singboxTpl, _ := a.st.GetSetting("sub_singbox_template")
 	siteName, _ := a.st.GetSetting("site_name")
 	if strings.TrimSpace(siteName) == "" {
-		siteName = "轻舟"
+		siteName = "亲友团"
 	}
 	// Explicit ?format= wins; otherwise auto-detect from the client User-Agent
 	// so Clash/sing-box/Surge each get a native config out of the box.
@@ -1189,7 +1189,7 @@ func (a *API) nodeHost() string {
 }
 
 func (a *API) selfBuiltLinks(u *store.User) []store.SelfBuiltLink {
-	// 轻舟 manages its own sing-box inbounds; build the links from our own data.
+	// 亲友团 manages its own sing-box inbounds; build the links from our own data.
 	return a.st.BuildSelfBuiltLinks(u, a.nodeHost())
 }
 

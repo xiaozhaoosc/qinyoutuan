@@ -72,7 +72,7 @@ func TestExplicitFormatSuppressesInfoPage(t *testing.T) {
 }
 
 func TestContentDispositionCarriesBothForms(t *testing.T) {
-	got := contentDisposition("轻舟", "clash")
+	got := contentDisposition("亲友团", "clash")
 	if !strings.Contains(got, `filename="subscription.yaml"`) {
 		t.Errorf("missing ASCII fallback: %s", got)
 	}
@@ -80,7 +80,7 @@ func TestContentDispositionCarriesBothForms(t *testing.T) {
 		t.Errorf("missing RFC 5987 form: %s", got)
 	}
 	// The UTF-8 form must be percent-encoded, never raw bytes in a header.
-	if strings.Contains(got, "轻舟") {
+	if strings.Contains(got, "亲友团") {
 		t.Errorf("site name was not percent-encoded: %s", got)
 	}
 	for _, c := range got {
@@ -115,7 +115,7 @@ func TestRFC5987Escape(t *testing.T) {
 		"a=b":        "a%3Db",
 		"a:b":        "a%3Ab",
 		"a\"b":       "a%22b",
-		"轻舟":         "%E8%BD%BB%E8%88%9F",
+		"亲友团":         "%E8%BD%BB%E8%88%9F",
 	} {
 		if got := rfc5987Escape(in); got != want {
 			t.Errorf("rfc5987Escape(%q) = %q, want %q", in, got, want)

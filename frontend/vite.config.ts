@@ -15,11 +15,11 @@ export default defineConfig({
     // `npm run dev` talks to a locally running backend out of the box.
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8081',
+        target: 'http://127.0.0.1:8086',
         changeOrigin: true,
       },
       '/sub': {
-        target: 'http://127.0.0.1:8081',
+        target: 'http://127.0.0.1:8086',
         changeOrigin: true,
       },
     },

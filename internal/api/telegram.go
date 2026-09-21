@@ -78,11 +78,11 @@ func (a *API) refreshTelegramUsername(ctx context.Context, c *telegram.Client) (
 
 func (a *API) siteName() string {
 	if a == nil || a.st == nil {
-		return "轻舟"
+		return "亲友团"
 	}
 	n, _ := a.st.GetSetting("site_name")
 	if strings.TrimSpace(n) == "" {
-		return "轻舟"
+		return "亲友团"
 	}
 	return n
 }

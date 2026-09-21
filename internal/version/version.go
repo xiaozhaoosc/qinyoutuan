@@ -1,4 +1,4 @@
-// Package version holds the build-time version of the qingzhou binary and a
+// Package version holds the build-time version of the qinyoutuan binary and a
 // small semver comparison used by the in-panel updater to decide whether a
 // newer GitHub release is available.
 //

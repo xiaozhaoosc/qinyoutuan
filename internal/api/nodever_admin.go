@@ -304,7 +304,7 @@ func localInstallHint(argv []string, out string) string {
 // machine: directly under bash, or wrapped in systemd-run.
 //
 // Direct is the obvious choice and stays the default, but it is wrong on the
-// panel's own recommended deployment. deploy/qingzhou.service (and the unit
+// panel's own recommended deployment. deploy/qinyoutuan.service (and the unit
 // install.sh writes) sets ProtectSystem=full, which remounts /usr read-only
 // inside the service's mount namespace — and a forked child inherits that
 // namespace. The script installs to /usr/local/bin/sing-box, so clicking 重装
@@ -336,7 +336,7 @@ func localInstallArgv(binDirReadOnly bool, systemdRun string) []string {
 	}
 	return append([]string{
 		systemdRun, "--pipe", "--wait", "--collect", "--quiet",
-		"--unit=qingzhou-singbox-install", "-p", "RuntimeMaxSec=600", "--",
+		"--unit=qinyoutuan-singbox-install", "-p", "RuntimeMaxSec=600", "--",
 	}, direct...)
 }
 

@@ -309,7 +309,7 @@ CREATE TABLE IF NOT EXISTS help_docs (
   updated_at INTEGER NOT NULL
 );
 
--- ===== Native sing-box management (B2: 轻舟 replaces sing-box) =====
+-- ===== Native sing-box management (B2: 亲友团 replaces sing-box) =====
 -- TLS / Reality profiles attached to inbounds. server_json holds the sing-box
 -- inbound "tls" block (with the Reality private_key) and is stored ENCRYPTED.
 -- client_json holds the client-side params (sni/pbk/sid/alpn/fp) used to build
@@ -351,7 +351,7 @@ CREATE TABLE IF NOT EXISTS certificates (
   updated_at    INTEGER NOT NULL
 );
 
--- sing-box server inbounds owned by 轻舟. options holds extra inbound fields
+-- sing-box server inbounds owned by 亲友团. options holds extra inbound fields
 -- (transport, congestion_control, masquerade, ...) as JSON. A self_built node's
 -- inbound_tag links to sb_inbounds.tag, so grouping/subscription keep working.
 CREATE TABLE IF NOT EXISTS sb_inbounds (
@@ -537,7 +537,7 @@ CREATE TABLE IF NOT EXISTS servers (
   sort_order      INTEGER NOT NULL DEFAULT 0
 );
 
--- ===== Monitor probe (轻舟探针) =====
+-- ===== Monitor probe (亲友团探针) =====
 -- Per-server system metrics time-series, one row per agent report.
 -- Pruned to a rolling 35-day window (enough for a complete calendar month).
 CREATE TABLE IF NOT EXISTS server_metrics (
@@ -882,6 +882,17 @@ func (s *Store) Migrate() error {
 		// deleted, so 链路拓扑 can keep showing that the exit silently moved to this
 		// machine. Cleared by any save of the inbound. See SbInbound.UpstreamBroken.
 		`ALTER TABLE sb_inbounds ADD COLUMN upstream_broken INTEGER NOT NULL DEFAULT 0`,
+		// Cloudflare Argo / Quick Tunnel exposure: a vmess(+ws) inbound can be
+		// fronted by an external cloudflared tunnel so clients reach a CDN edge
+		// instead of the landing IP (reachable even when that IP is blocked).
+		// argo_mode: '' (off) | temporary | fixed; argo_auth = fixed-tunnel token,
+		// argo_domain = its public host. Defaults keep every existing inbound
+		// behaving exactly as before the upgrade. (Argo_auth is a CF credential;
+		// encrypting it at rest is deferred to the process/API stage.)
+		`ALTER TABLE sb_inbounds ADD COLUMN argo_enabled INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE sb_inbounds ADD COLUMN argo_mode TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE sb_inbounds ADD COLUMN argo_auth TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE sb_inbounds ADD COLUMN argo_domain TEXT NOT NULL DEFAULT ''`,
 		// A self-built node is the user-facing logical route. Several nodes may now
 		// share one physical inbound and select different landing inbounds; 0 keeps
 		// the legacy behaviour of inheriting the physical inbound's own chain.
@@ -989,7 +1000,7 @@ func (s *Store) Migrate() error {
 		`ALTER TABLE server_metrics ADD COLUMN net_totals_valid INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE server_metrics ADD COLUMN net_rx_bytes INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE server_metrics ADD COLUMN net_tx_bytes INTEGER NOT NULL DEFAULT 0`,
-		// Version of the reporting qingzhou-probe binary. Blank identifies probes
+		// Version of the reporting qinyoutuan-probe binary. Blank identifies probes
 		// from before version reporting existed and lets the UI request an upgrade.
 		`ALTER TABLE server_metrics ADD COLUMN probe_version TEXT NOT NULL DEFAULT ''`,
 		// Prorated refunds: record how much was actually refunded on each order so
@@ -1126,6 +1137,11 @@ func (s *Store) Migrate() error {
 	// Backfill probe_token_hash for existing (plaintext) tokens so hash-based
 	// lookup keeps working after the upgrade. Idempotent (skips rows already set).
 	if err := s.backfillProbeTokenHash(); err != nil {
+		return err
+	}
+	// The Cloudflare tunnel token (sb_inbounds.argo_auth) started as plaintext;
+	// encrypt any legacy rows exactly once so read paths can assume ciphertext.
+	if err := s.migrateEncryptArgoAuth(); err != nil {
 		return err
 	}
 	// Seed the bucket model from legacy single-plan columns (idempotent).
@@ -1378,6 +1394,48 @@ func (s *Store) backfillProbeTokenHash() error {
 		if _, err := s.db.Exec(`UPDATE servers SET probe_token_hash=? WHERE id=?`, hashProbeToken(r.tok), r.id); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// migrateEncryptArgoAuth encrypts any sb_inbounds.argo_auth values that were
+// stored in plaintext before the Cloudflare tunnel token learned resting
+// encryption. Idempotent: already-encrypted (enc-prefixed) values are skipped,
+// so a restart never double-encrypts; rows with no token are untouched.
+func (s *Store) migrateEncryptArgoAuth() error {
+	rows, err := s.db.Query(`SELECT id, argo_auth FROM sb_inbounds WHERE argo_auth <> ''`)
+	if err != nil {
+		return err
+	}
+	type row struct {
+		id     int64
+		auth   string
+	}
+	var todo []row
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(&r.id, &r.auth); err != nil {
+			rows.Close()
+			return err
+		}
+		todo = append(todo, r)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, r := range todo {
+		if strings.HasPrefix(r.auth, encPrefix) {
+			continue // already encrypted
+		}
+		if enc := s.encrypt(r.auth); enc != r.auth {
+			if _, err := s.db.Exec(`UPDATE sb_inbounds SET argo_auth=? WHERE id=?`, enc, r.id); err != nil {
+				return err
+			}
+		}
+	}
+	if len(todo) > 0 {
+		log.Printf("migrate: encrypted %d argo tunnel tokens", len(todo))
 	}
 	return nil
 }

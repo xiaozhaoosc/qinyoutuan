@@ -16,8 +16,8 @@ cmd/probe/dist
 *.db-wal
 *.db-shm
 out/
-qingzhou
-qingzhou.exe
+qinyoutuan
+qinyoutuan.exe
 
 # 编辑器/杂项
 .vscode

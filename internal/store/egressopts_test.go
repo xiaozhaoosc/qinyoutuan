@@ -147,7 +147,7 @@ func TestEgressUDPBlockRuleOrder(t *testing.T) {
 //
 // Blocking UDP on an egress also blocks the client's DNS, which is UDP. A client
 // with no DNS reports "no network" for everything — and only for SOME users,
-// because 轻舟's Clash/sing-box subscriptions ship DoH (TCP) while a v2rayN user
+// because 亲友团's Clash/sing-box subscriptions ship DoH (TCP) while a v2rayN user
 // gets bare links and their client's UDP default. So the DNS rescue has to be
 // ahead of the reject, and it must not touch a passthrough egress.
 func TestEgressUDPBlockRescuesDNS(t *testing.T) {

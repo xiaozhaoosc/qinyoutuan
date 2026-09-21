@@ -8,8 +8,8 @@
       <n-form-item label="Issuer 地址"><n-input v-model:value="form.issuer" placeholder="https://auth.example.com" /></n-form-item>
       <n-form-item label="Client ID"><n-input v-model:value="form.client_id" /></n-form-item>
       <n-form-item label="Client Secret"><n-input v-model:value="form.client_secret" type="password" show-password-on="click" placeholder="公共客户端可留空；*** 表示保留已保存密钥" :input-props="{ autocomplete: 'new-password' }" /></n-form-item>
-      <n-form-item label="轻舟回调地址"><n-input v-model:value="form.redirect_url" placeholder="https://panel.example.com/api/auth/oauth2/callback" /></n-form-item>
-      <n-form-item label="允许首次登录创建轻舟账号">
+      <n-form-item label="亲友团回调地址"><n-input v-model:value="form.redirect_url" placeholder="https://panel.example.com/api/auth/oauth2/callback" /></n-form-item>
+      <n-form-item label="允许首次登录创建亲友团账号">
         <div><n-switch v-model:value="form.auto_register" /><p style="color: var(--text-3); font-size: 12px">仅在本站开放注册时生效，并遵守邮箱验证设置。已有账号需在账户设置中显式绑定，不会按邮箱自动合并。</p></div>
       </n-form-item>
       <n-space>

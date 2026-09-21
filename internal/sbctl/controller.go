@@ -1,4 +1,4 @@
-// Package sbctl is the orchestration layer for 轻舟's native sing-box (B2). It
+// Package sbctl is the orchestration layer for 亲友团's native sing-box (B2). It
 // ties the data layer, config generator, process manager and stats client
 // together:
 //

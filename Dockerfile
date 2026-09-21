@@ -1,10 +1,12 @@
-# syntax=docker/dockerfile:1
-#
-# 多阶段构建轻舟面板镜像：① 构建内嵌 Vue 前端 → ② 交叉编译 Go 二进制（含两架构探针）
+# 多阶段构建亲友团面板镜像：① 构建内嵌 Vue 前端 → ② 交叉编译 Go 二进制（含两架构探针）
 # → ③ 极小 alpine 运行镜像。纯 Go（modernc sqlite，无 CGO），支持 linux/amd64 与 arm64。
 #
-# 本地构建：   docker build --build-arg VERSION=v0.2.7 -t qingzhou .
+# 本地构建：   docker build --build-arg VERSION=v0.2.7 -t qinyoutuan .
 # 多架构构建： docker buildx build --platform linux/amd64,linux/arm64 --build-arg VERSION=v0.2.7 ...
+#
+# 刻意不写 `# syntax=docker/dockerfile:1`：经典多阶段特性由 BuildKit 内置前端直接支持，
+# 写它反而要求额外拉取 docker/dockerfile:1 前端镜像——在受限/镜像源不稳的网络下，
+# 那一次拉取足以让整个构建失败（本项目曾在镜像源 403/525 时卡死在这一步）。
 
 # --- ① 前端（产物内嵌进二进制，必须先于 Go 构建）---
 FROM --platform=$BUILDPLATFORM node:20-alpine AS frontend
@@ -30,9 +32,9 @@ COPY . .
 COPY --from=frontend /app/frontend/dist ./frontend/dist
 # 面板：两个架构都编（注入版本号 = 在线更新比较所需）
 RUN GOOS=linux GOARCH=amd64 \
-    go build -trimpath -ldflags "-s -w -X qingzhou/internal/version.Version=${VERSION}" -o /out/qingzhou-amd64 . \
+    go build -trimpath -ldflags "-s -w -X qingzhou/internal/version.Version=${VERSION}" -o /out/qinyoutuan-amd64 . \
  && GOOS=linux GOARCH=arm64 \
-    go build -trimpath -ldflags "-s -w -X qingzhou/internal/version.Version=${VERSION}" -o /out/qingzhou-arm64 .
+    go build -trimpath -ldflags "-s -w -X qingzhou/internal/version.Version=${VERSION}" -o /out/qinyoutuan-arm64 .
 # 探针：两个架构都编（面板按被监控机架构分发 /api/monitor/agent/linux-<arch>）
 RUN GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w -X qingzhou/internal/version.Version=${VERSION}" -o /out/probe/probe-linux-amd64 ./cmd/probe \
  && GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w -X qingzhou/internal/version.Version=${VERSION}" -o /out/probe/probe-linux-arm64 ./cmd/probe
@@ -42,26 +44,26 @@ FROM alpine:3.20
 ARG TARGETARCH
 # ca-certificates：访问 GitHub(在线更新)/SMTP/SSH 需要；tzdata：正确本地时间；wget(busybox) 供健康检查
 RUN apk add --no-cache ca-certificates tzdata \
- && adduser -D -u 10001 qingzhou \
+ && adduser -D -u 10001 qinyoutuan \
  && mkdir -p /data \
- && chown qingzhou:qingzhou /data
-COPY --from=builder /out/qingzhou-${TARGETARCH} /usr/local/bin/qingzhou
-COPY --from=builder /out/probe /opt/qingzhou/probe
+ && chown qinyoutuan:qinyoutuan /data
+COPY --from=builder /out/qinyoutuan-${TARGETARCH} /usr/local/bin/qinyoutuan
+COPY --from=builder /out/probe /opt/qinyoutuan/probe
 # 断言 ELF e_machine 与镜像架构一致，避免再把 amd64 二进制拷进 arm64 镜像（#27）
-RUN got=$(dd if=/usr/local/bin/qingzhou bs=1 skip=18 count=2 2>/dev/null | od -An -t x1 | tr -d ' \n'); \
+RUN got=$(dd if=/usr/local/bin/qinyoutuan bs=1 skip=18 count=2 2>/dev/null | od -An -t x1 | tr -d ' \n'); \
     case "$TARGETARCH" in \
       amd64) want=3e00 ;; \
       arm64) want=b700 ;; \
       *) echo "unsupported TARGETARCH=$TARGETARCH"; exit 1 ;; \
     esac; \
-    [ "$got" = "$want" ] || { echo "qingzhou ELF e_machine=$got want=$want ($TARGETARCH)"; exit 1; }
-ENV QZ_LISTEN=0.0.0.0:8081 \
-    QZ_DB=/data/qingzhou.db \
-    QZ_PROBE_DIR=/opt/qingzhou/probe
+    [ "$got" = "$want" ] || { echo "qinyoutuan ELF e_machine=$got want=$want ($TARGETARCH)"; exit 1; }
+ENV QZ_LISTEN=0.0.0.0:8086 \
+    QZ_DB=/data/qinyoutuan.db \
+    QZ_PROBE_DIR=/opt/qinyoutuan/probe
 EXPOSE 8081
 VOLUME ["/data"]
-USER qingzhou
+USER qinyoutuan
 WORKDIR /data
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://127.0.0.1:8081/ >/dev/null 2>&1 || exit 1
-ENTRYPOINT ["qingzhou"]
+    CMD wget -qO- http://127.0.0.1:8086/ >/dev/null 2>&1 || exit 1
+ENTRYPOINT ["qinyoutuan"]

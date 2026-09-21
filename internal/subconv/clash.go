@@ -287,15 +287,15 @@ func injectClashAIRoute(doc map[string]any) {
 	if providers == nil {
 		providers = map[string]any{}
 	}
-	providers["qingzhou-ai"] = map[string]any{
+	providers["qinyoutuan-ai"] = map[string]any{
 		"type": "http", "behavior": "domain", "format": "mrs",
-		"path": "./ruleset/qingzhou-ai.mrs", "url": clashAIRuleURL,
+		"path": "./ruleset/qinyoutuan-ai.mrs", "url": clashAIRuleURL,
 		"interval": 86400, "proxy": grpFixedClash,
 	}
 	doc["rule-providers"] = providers
 
 	rules, _ := doc["rules"].([]any)
-	doc["rules"] = append([]any{"RULE-SET,qingzhou-ai," + grpAIClash}, rules...)
+	doc["rules"] = append([]any{"RULE-SET,qinyoutuan-ai," + grpAIClash}, rules...)
 }
 
 func clashFallback(name string, proxies []string) map[string]any {

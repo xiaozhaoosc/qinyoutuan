@@ -102,7 +102,7 @@ jobs:
           fi
           for arch in amd64 arm64; do
             echo "== panel linux/$arch =="
-            GOOS=linux GOARCH=$arch go build -ldflags "$LDFLAGS" -o "out/qingzhou-linux-$arch" .
+            GOOS=linux GOARCH=$arch go build -ldflags "$LDFLAGS" -o "out/qinyoutuan-linux-$arch" .
             echo "== probe linux/$arch =="
             GOOS=linux GOARCH=$arch go build -ldflags "-s -w -X qingzhou/internal/version.Version=${TAG}" -o "out/probe-linux-$arch" ./cmd/probe
           done
@@ -120,7 +120,7 @@ jobs:
             echo "require a signature that this job cannot produce, bricking in-panel updates." >&2
             exit 1
           fi
-          go run ./tools/sign out/qingzhou-linux-amd64 out/qingzhou-linux-arm64
+          go run ./tools/sign out/qinyoutuan-linux-amd64 out/qinyoutuan-linux-arm64
           ls -l out/*.sig
 
       # sing-box, built WITH the v2ray_api plugin.
@@ -175,9 +175,9 @@ jobs:
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
           files: |
-            out/qingzhou-linux-amd64
-            out/qingzhou-linux-arm64
-            out/qingzhou-linux-*.sig
+            out/qinyoutuan-linux-amd64
+            out/qinyoutuan-linux-arm64
+            out/qinyoutuan-linux-*.sig
             out/probe-linux-amd64
             out/probe-linux-arm64
             out/sing-box-linux-amd64

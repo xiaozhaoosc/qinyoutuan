@@ -262,7 +262,7 @@ func parseSS(raw string) (*Proxy, error) {
 		name, _ = url.QueryUnescape(body[i+1:])
 		body = body[:i]
 	}
-	// SIP002 puts options in the query (plugin=..., and 轻舟's own qz-udp).
+	// SIP002 puts options in the query (plugin=..., and 亲友团's own qz-udp).
 	// This used to be discarded wholesale, which was fine while nothing read
 	// it; keep the parsed form so ss nodes see the same params as URL-style
 	// links.
@@ -322,9 +322,9 @@ func DecodeLinks(blob string) []string {
 }
 
 // volatileParams are client-dial tuning knobs a share link may carry that say
-// nothing about *which* node it is. 轻舟 mirrors the inbound's current settings
+// nothing about *which* node it is. 亲友团 mirrors the inbound's current settings
 // onto every self-built link, so they change whenever an admin retunes a node —
-// or whenever 轻舟 starts emitting a key it didn't before. Excluding them keeps
+// or whenever 亲友团 starts emitting a key it didn't before. Excluding them keeps
 // NodeKey pointing at the same node across those changes.
 var volatileParams = map[string]bool{
 	"packetEncoding": true, "packet_encoding": true,
@@ -524,7 +524,7 @@ func (p *Proxy) param(keys ...string) string {
 // the renderers say so in the client config, so the refusal happens instantly
 // client-side instead of as a silent server-side black hole each application
 // must time out against. Read from the query for URL-style links and from the
-// JSON map for vmess (safe to check both: the key is 轻舟's own, so the "type"
+// JSON map for vmess (safe to check both: the key is 亲友团's own, so the "type"
 // namespace collision that keeps param() and the vmess map apart can't occur).
 func (p *Proxy) udpBlocked() bool {
 	if p.param("qz-udp") == "block" {
@@ -563,7 +563,7 @@ func (p *Proxy) tlsParam(keys ...string) string {
 // renderer previously accepted its own subset, so the same imported node came
 // out with skip-cert-verify in one format and without it in another.
 //
-// The value form varies too. 轻舟 writes the string "1", but a vmess link from
+// The value form varies too. 亲友团 writes the string "1", but a vmess link from
 // another panel routinely carries a JSON boolean, which str() renders as "true";
 // comparing against "1" alone silently dropped the exemption and left a
 // self-signed node failing certificate verification with nothing to explain why.

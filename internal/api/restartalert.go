@@ -335,7 +335,7 @@ func renderRestartLoopAlert(name string, count int, minutes int64) string {
 		fmt.Sprintf("最近 %d 分钟内自动重启 <b>%d</b> 次，且不是由后台操作触发的。\n\n", minutes, count) +
 		"已暂停该节点的周期性配置下发；流量统计与探针上报继续运行。请检查后在面板中人工重新下发。\n\n" +
 		"面板日志：\n" +
-		"<code>journalctl -u qingzhou | grep 连接会断一次</code>"
+		"<code>journalctl -u qinyoutuan | grep 连接会断一次</code>"
 }
 
 func renderRestartCircuitRecovery(name string) string {

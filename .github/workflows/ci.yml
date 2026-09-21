@@ -50,6 +50,24 @@ jobs:
           bash -n internal/assets/install-singbox.sh
           bash -n install.sh
 
+  # Argo 隧道移植（阶段 A–F）专项套件：全模块编译 + vet + 新增单测 +
+  # install-singbox.sh 语法 + 启动冒烟（/api/health）。直接复用
+  # scripts/test-argo.sh，本机/CI 跑同一份脚本，避免两处漂移。
+  argo-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      # Go build embeds frontend/dist; give it a placeholder (same as the `go` job).
+      - name: Placeholder frontend assets
+        run: |
+          mkdir -p frontend/dist
+          [ -f frontend/dist/index.html ] || echo '<!doctype html><title>ci</title>' > frontend/dist/index.html
+      - name: Run Argo test suite
+        run: bash scripts/test-argo.sh
+
   frontend:
     runs-on: ubuntu-latest
     steps:

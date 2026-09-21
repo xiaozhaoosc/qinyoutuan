@@ -273,7 +273,7 @@ func (a *API) handleAdminDeleteGroup(w http.ResponseWriter, r *http.Request) {
 	ok(w, nil)
 }
 
-// handleAdminInbounds lists 轻舟's own sing-box inbounds (tag/type) so admins can
+// handleAdminInbounds lists 亲友团's own sing-box inbounds (tag/type) so admins can
 // bind self-built nodes to them.
 func (a *API) handleAdminInbounds(w http.ResponseWriter, r *http.Request) {
 	list, err := a.st.ListSbInbounds()

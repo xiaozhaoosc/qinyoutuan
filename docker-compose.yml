@@ -1,24 +1,24 @@
-# 轻舟面板 · Docker Compose
+# 亲友团面板 · Docker Compose
 #
 # 快速开始：
 #   1. 改下面的 QZ_PUBLIC_BASE 和 QZ_SECRET_KEY（openssl rand -hex 32）
 #   2. docker compose up -d
-#   3. docker compose logs -f qingzhou   # 首启会打印随机管理员密码（若未设 QZ_ADMIN_PASS）
+#   3. docker compose logs -f qinyoutuan   # 首启会打印随机管理员密码（若未设 QZ_ADMIN_PASS）
 #
 # 面板是「中心机」，通过 SSH 管理远程落地 sing-box —— 容器本身不需要跑 sing-box。
 
 services:
-  qingzhou:
+  qinyoutuan:
     # 用官方预构建镜像（多架构）。想自己构建就注释掉 image、放开 build。
     image: ghcr.io/mllt992/qing-zhou:latest
     # build: .
-    container_name: qingzhou
+    container_name: qinyoutuan
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "8081:8086"
     environment:
       # 容器内必须监听 0.0.0.0，否则端口映射不通
-      QZ_LISTEN: "0.0.0.0:8081"
+      QZ_LISTEN: "0.0.0.0:8086"
       # 面板对外访问地址（订阅链接、探针安装、邮件链接都用它）——改成你的域名/IP
       QZ_PUBLIC_BASE: "https://node.example.com"
       # 敏感配置加密主密钥，务必改：openssl rand -hex 32
@@ -34,11 +34,11 @@ services:
       # QZ_SSH_KEY_DIR: "/data/ssh-keys"
     volumes:
       # 命名卷持久化数据库（含账号/订单/配置）。非 root(uid 10001) 运行，命名卷可正常写入。
-      - qingzhou-data:/data
+      - qinyoutuan-data:/data
       # 想用「私钥文件」而不是把私钥粘进面板，就把私钥挂到 /data/ssh-keys 下。
       # 容器以 uid 10001 运行：宿主机上 root 拥有的 600 私钥挂进去是读不了的，
       # 先 chown 10001 <私钥>，否则面板的下拉框里会标成「面板读不了」。
-      # - /srv/qingzhou/ssh-keys:/data/ssh-keys:ro
+      # - /srv/qinyoutuan/ssh-keys:/data/ssh-keys:ro
 
 volumes:
-  qingzhou-data:
+  qinyoutuan-data:

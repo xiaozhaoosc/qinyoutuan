@@ -24,7 +24,7 @@ func dnsServers(t *testing.T, dns map[string]any) []map[string]any {
 	return mapSlice(dns["servers"])
 }
 
-// The exact shape 轻舟 shipped before sing-box 1.14 removed it. Every field here
+// The exact shape 亲友团 shipped before sing-box 1.14 removed it. Every field here
 // has to land somewhere in the typed format or a user's DNS silently changes.
 func TestModernizeLegacyDefaultTemplate(t *testing.T) {
 	dns := modernize(t, `{"dns":{

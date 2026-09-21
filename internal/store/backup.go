@@ -9,10 +9,10 @@ import (
 
 // BackupTo writes a consistent snapshot of the whole database to dst.
 //
-// This exists because the obvious thing — copying qingzhou.db — is wrong here.
+// This exists because the obvious thing — copying qinyoutuan.db — is wrong here.
 // The database runs in WAL mode, so at any moment an arbitrary amount of
 // committed data lives in the -wal file and not in the main file at all. A copy
-// of qingzhou.db alone is a torn, stale database; a copy of all three files
+// of qinyoutuan.db alone is a torn, stale database; a copy of all three files
 // taken while a write is in flight is worse, because it looks intact and only
 // fails later. Restoring either one loses orders, traffic counters, or the
 // certificate table, and the operator finds out at the moment they can least

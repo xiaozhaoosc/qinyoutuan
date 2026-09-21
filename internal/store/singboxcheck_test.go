@@ -11,7 +11,7 @@ import (
 )
 
 // TestServerConfigPassesSingboxCheck runs the real `sing-box check` over the
-// SERVER config 轻舟 pushes to a node, with every wiring shape at once: a plain
+// SERVER config 亲友团 pushes to a node, with every wiring shape at once: a plain
 // direct-exit inbound, a relay hop into a landing (which now carries
 // multiplex), and two third-party egresses — one blocking UDP, one passing it
 // through — with their connect_timeout.

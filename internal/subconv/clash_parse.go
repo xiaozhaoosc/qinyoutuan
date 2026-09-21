@@ -184,7 +184,7 @@ func clashToLink(m map[string]any) string {
 
 	case "anytls":
 		// Only sni and insecure are in the official anytls URI scheme; alpn/fp
-		// are 轻舟 extensions that conforming parsers ignore, kept so our own
+		// are 亲友团 extensions that conforming parsers ignore, kept so our own
 		// renderers round-trip without loss.
 		q := url.Values{}
 		if v := str(m["sni"]); v != "" {

@@ -23,7 +23,7 @@ import (
 //	  -E QZ_SYSTEMD_INSTALL_TEST=1 -- ./api.test -test.run TestLocalInstall -test.v
 //
 // The systemd-run wrapper is how the panel's own service is reproduced: those
-// are the two hardening directives deploy/qingzhou.service sets. Run without it
+// are the two hardening directives deploy/qinyoutuan.service sets. Run without it
 // and the test skips, because /usr would be writable and there would be nothing
 // to prove.
 const systemdInstallTestEnv = "QZ_SYSTEMD_INSTALL_TEST"
