@@ -844,6 +844,11 @@ func argoVariantLinks(base singbox.LinkParams, argoHost, mode string) []singbox.
 		v.WSHost = argoHost
 		v.Network = "ws"
 		v.TLS = cp.tls
+		// CF 边缘终结 TLS：argo 变体不做 Reality 握手（把 CF 证书当 Reality
+		// 公钥校验会直接失败），清掉来源入站的 Reality 参数。
+		v.PublicKey = ""
+		v.ShortID = ""
+		v.Flow = false
 		if cp.tls {
 			v.SNI = argoHost
 			v.Insecure = false

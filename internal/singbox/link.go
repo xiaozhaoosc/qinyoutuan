@@ -371,6 +371,14 @@ func BuildShareLink(p LinkParams) string {
 				// through to the vmess JSON map. Clients that don't know it ignore it.
 				m["allowInsecure"] = "1"
 			}
+			// vmess+Reality：标准 vmess JSON 没有 reality 字段，这里补充
+			// security/pbk/sid 扩展键（v2rayN 及本面板 subconv 均按此识别），
+			// 否则客户端拿不到 public_key/short_id，Reality 握手必然失败。
+			if p.PublicKey != "" {
+				m["security"] = "reality"
+				m["pbk"] = p.PublicKey
+				m["sid"] = p.ShortID
+			}
 		} else {
 			m["tls"] = ""
 		}

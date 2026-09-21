@@ -542,7 +542,13 @@ func singboxOutbound(p *Proxy) map[string]any {
 		// them through p.param, which falls through to the vmess JSON map, so
 		// vmess now gets the same TLS treatment as every other protocol.
 		if str(p.VMess["tls"]) == "tls" {
-			o["tls"] = sbTLS(p, "tls")
+			// vmess+Reality：链接 JSON 里带 security=reality（见 BuildShareLink），
+			// 此处必须透传，否则 sbTLS 只当普通 TLS 渲染、客户端拿不到 pbk/sid。
+			sec := "tls"
+			if str(p.VMess["security"]) == "reality" {
+				sec = "reality"
+			}
+			o["tls"] = sbTLS(p, sec)
 		}
 	case "ss":
 		o["type"] = "shadowsocks"
@@ -702,10 +708,12 @@ func sbTLS(p *Proxy, sec string) map[string]any {
 	}
 	if sec == "reality" {
 		re := map[string]any{"enabled": true}
-		if v := p.param("pbk"); v != "" {
+		// pbk/sid 用 tlsParam 而非 param：vmess 链接把这两个键放在 JSON payload
+		// 而非 query 里，param() 读不到。
+		if v := p.tlsParam("pbk"); v != "" {
 			re["public_key"] = v
 		}
-		if v := p.param("sid"); v != "" {
+		if v := p.tlsParam("sid"); v != "" {
 			re["short_id"] = v
 		}
 		tls["reality"] = re

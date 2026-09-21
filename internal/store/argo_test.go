@@ -29,6 +29,9 @@ func TestArgoVariantLinks(t *testing.T) {
 		if v.Network != "ws" {
 			t.Fatalf("network not forced to ws: %q", v.Network)
 		}
+		if v.PublicKey != "" || v.ShortID != "" || v.Flow {
+			t.Fatalf("argo variant must clear reality params (CF edge terminates TLS), got pbk=%q sid=%q flow=%v", v.PublicKey, v.ShortID, v.Flow)
+		}
 		if v.Port < 1 {
 			t.Fatalf("bad port %d", v.Port)
 		}
