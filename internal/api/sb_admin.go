@@ -1573,8 +1573,8 @@ func (a *API) handleAdminSaveSbInbound(w http.ResponseWriter, r *http.Request) {
 			fail(w, http.StatusBadRequest, "Argo 模式仅支持 temporary 或 fixed")
 			return
 		}
-		if n.Type != "vmess" {
-			fail(w, http.StatusBadRequest, "Argo 隧道目前仅支持 vmess(ws) 入站")
+		if n.Type != "vmess" && n.Type != "vless" {
+			fail(w, http.StatusBadRequest, "Argo 隧道仅支持 vmess(ws) 或 vless(ws) 入站")
 			return
 		}
 	} else if n.ArgoMode != "" || n.ArgoAuth != "" || n.ArgoDomain != "" {

@@ -785,7 +785,7 @@ func (ib *SbInbound) argoSpec() sbproc.ArgoSpec {
 // being built — only an argo inbound that lives on that same server gets an
 // origin here. Returns nil when the inbound is not argo-exposed.
 func argoOriginInbound(ib *SbInbound, users []singbox.User, originOnServer int64) *singbox.Inbound {
-	if !ib.ArgoEnabled || ib.Type != "vmess" || ib.ArgoMode == "" || ib.ServerID != originOnServer {
+	if !ib.ArgoEnabled || (ib.Type != "vmess" && ib.Type != "vless") || ib.ArgoMode == "" || ib.ServerID != originOnServer {
 		return nil
 	}
 	// 客户端走隧道时携带的 ws path 必须与回源入站一致，否则 sing-box 404
@@ -1124,7 +1124,7 @@ func (s *Store) BuildSelfBuiltLinks(u *User, host string) []SelfBuiltLink {
 		// offline. The normal direct link above stays, giving clients both. For a
 		// temporary tunnel we only have the hostname once it is up (sbproc cache),
 		// so before then nothing extra is emitted and the node still works direct.
-		if ib.ArgoEnabled && ib.Type == "vmess" && (ib.ArgoMode == "temporary" || ib.ArgoMode == "fixed") {
+		if ib.ArgoEnabled && (ib.Type == "vmess" || ib.Type == "vless") && (ib.ArgoMode == "temporary" || ib.ArgoMode == "fixed") {
 			spec := ib.argoSpec()
 			host := ""
 			if spec.Mode == "fixed" {

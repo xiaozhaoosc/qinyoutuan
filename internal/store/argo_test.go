@@ -104,14 +104,18 @@ func TestArgoOriginInbound(t *testing.T) {
 		t.Fatalf("origin transport wrong: %+v", origin.Base["transport"])
 	}
 
-	// 其它 server 的入站、非 vmess、未启用 argo → 不派生
+	// 其它 server 的入站、非 ws 协议、未启用 argo → 不派生
 	if got := argoOriginInbound(&SbInbound{ServerID: 1, Type: "vmess", Tag: "x", ListenPort: 20086, ArgoEnabled: true, ArgoMode: "temporary"}, users, 0); got != nil {
 		t.Fatal("remote-server inbound must not derive an origin here")
 	}
-	if got := argoOriginInbound(&SbInbound{ServerID: 0, Type: "vless", Tag: "x", ListenPort: 20086, ArgoEnabled: true, ArgoMode: "temporary"}, users, 0); got != nil {
-		t.Fatal("non-vmess inbound must not derive an origin")
+	if got := argoOriginInbound(&SbInbound{ServerID: 0, Type: "trojan", Tag: "x", ListenPort: 20086, ArgoEnabled: true, ArgoMode: "temporary"}, users, 0); got != nil {
+		t.Fatal("non-ws protocol inbound must not derive an origin")
 	}
 	if got := argoOriginInbound(&SbInbound{ServerID: 0, Type: "vmess", Tag: "x", ListenPort: 20086}, users, 0); got != nil {
 		t.Fatal("non-argo inbound must not derive an origin")
+	}
+	// vless 入站同样可挂 argo（Reality 直连 + CF 隧道回源）
+	if got := argoOriginInbound(&SbInbound{ServerID: 0, Type: "vless", Tag: "v", ListenPort: 30000, ArgoEnabled: true, ArgoMode: "temporary", Options: `{"transport":{"type":"ws","path":"/ws"}}`}, users, 0); got == nil {
+		t.Fatal("vless argo inbound should derive an origin too")
 	}
 }
