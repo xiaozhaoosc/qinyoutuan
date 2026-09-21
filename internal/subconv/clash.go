@@ -382,6 +382,18 @@ func clashProxy(p *Proxy, opt ClashOptions) map[string]any {
 			if v := p.tlsParam("alpn"); v != "" {
 				m["alpn"] = strings.Split(v, ",")
 			}
+			// vmess+Reality：链接 JSON 里的 security=reality 与 pbk/sid（见
+			// singbox.BuildShareLink），mihomo 用 reality-opts 表达。
+			if str(p.VMess["security"]) == "reality" {
+				ro := map[string]any{}
+				if v := p.tlsParam("pbk"); v != "" {
+					ro["public-key"] = v
+				}
+				if v := p.tlsParam("sid"); v != "" {
+					ro["short-id"] = v
+				}
+				m["reality-opts"] = ro
+			}
 			if p.tlsInsecure() {
 				m["skip-cert-verify"] = true
 			}
