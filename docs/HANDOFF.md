@@ -83,9 +83,9 @@ ssh -i oracle/ssh-key-2026-09-20.key ubuntu@64.181.244.178
 
 ## 4. 当前代码里有什么（按目录）
 
-- `internal/store/` 数据层。`SbInbound` 已含 Argo 字段（`argo_enabled/argo_mode/argo_auth/argo_domain/argo_host`），`singbox.go` 新增 13 端口 Argo 出站（`argoVariantLinks`/`argoCDNPorts`）；`migrate.go` 有幂等迁移（含 argo 列、`migrateEncryptArgoAuth` 加密 token）。
+- `internal/store/` 数据层。`SbInbound` 已含 Argo 字段（`argo_enabled/argo_mode/argo_auth/argo_domain/argo_host`），`singbox.go` 含 Argo 出站（`argoVariantLinks`：temporary 只发 443、fixed 才展开 80系×7+443系×6；`argoCDNPorts`）与 **`argoOriginInbound` 派生无 TLS 明文 ws 回源入站**（`127.0.0.1:<ListenPort+10000>`，cloudflared 回源目标）；`migrate.go` 有幂等迁移（含 argo 列、`migrateEncryptArgoAuth` 加密 token）。
 - `internal/sbproc/` **Argo 驱动器**（本移植核心）：`cloudflared.go` 含
-  `ArgoSpec`、`ArgoArgs`、`ParseTemporaryHostname`、`CloudflaredServiceUnit`、`FindCloudflaredBin`、
+  `ArgoOriginPortDelta`、`ArgoSpec`、`ArgoArgs`、`ParseTemporaryHostname`、`CloudflaredServiceUnit`、`FindCloudflaredBin`、
   `EnsureLocalArgo`(本机)、`RemoteEnsureScript`/`EnsureRemoteArgo`(远端，阶段E)、`ArgoHost` 缓存。
 - `internal/api/`：入站 API（`sb_admin.go` 含 argo 校验与列表 argo 字段）；`argo_remote.go` = `api.StartArgoSync`（远端落地机 Argo 编排）。
 - `main.go`：`startLocalArgoSync`(本机) + `StartArgoSync`(远端)。
@@ -102,10 +102,10 @@ ssh -i oracle/ssh-key-2026-09-20.key ubuntu@64.181.244.178
 | A 数据模型+迁移 | ✅ | `SbInbound.argo_*` 字段、`ALTER TABLE` 幂等迁移、`argo_auth` AES 加密+老明文迁移 |
 | B cloudflared 交付链 | ✅ | `install-singbox.sh --with-argo` 拉官方 cloudflared（不自建）；定 arm/amd 架构名 |
 | C 进程管理+本机胶水 | ✅ | sbproc 驱动器 + `startLocalArgoSync`（本机 systemd 托管，优于 pgrep） |
-| D 订阅 13 端口出站 | ✅ | `argoVariantLinks`（80系×7 + 443系×6）|
+| D 订阅 13 端口出站 | ✅ | `argoVariantLinks`（**temporary 只发 443**；fixed 才 80系×7 + 443系×6）|
 | E 远端落地机 Argo | ◐ 核心+编排完成 | `api.StartArgoSync` 经 sshctl；**尚未真机联调** |
 | F API + 前端 | ◐ 后端✅；前端已改待 CI 验证 | 入站页 Argo 配置 + 状态；`node_host_override`/分组授权见 §6.2 |
-| G 端到端+文档 | ◐ 本机+订阅验证过；**见 §6 已知问题** | `scripts/test-argo.sh` 6/6 |
+| G 端到端+文档 | ✅ 本机+订阅+sing-box 客户端真连验证过 | `scripts/test-argo.sh` 6/6；argo-443 端到端实测 204；**§6.3-1/6.3-2 已修复** |
 
 ---
 
@@ -126,8 +126,11 @@ ssh -i oracle/ssh-key-2026-09-20.key ubuntu@64.181.244.178
 - 生产已设 `node_host_override=64.181.244.178`、`free_group_id=1`。
 
 ### 6.3 已知技术债 / 待办（按优先级）
-1. **【重要】临时隧道下 13 端口错配**：quick tunnel `*.trycloudflare.com` 只服务 443(80)，那 12 个非 443 端口节点必超时。**待改**：`temporary` 模式只下发 `443` 一个 argo 节点，`fixed` 才展开 13 端口。
-2. **【要查】argo 回源 502**：`https://<live.trycloudflare>/ws` 实测 502（origin 未干净应答）。需用 v2rayNG/sing-box 客户端真连一次确认；若直连/443 都通则可标注为"非阻塞"。
+> ✅ **2026-09-21 已解决**（提交 `ea0f6fe`）：
+> 1. 临时隧道 13 端口错配 —— 根因：quick tunnel 只服务 443(80)。已改：`temporary` 只下发 `443` 一个 argo 节点，`fixed` 才展开 13 端口（`argoVariantLinks` 按 `mode` 区分）。
+> 2. argo 回源 502/EOF —— 根因：cloudflared 回源到 Reality(TLS) 入站，明文 HTTP 被 sing-box 秒断（`Unable to reach the origin service: EOF`）。已改：config 生成时派生**无 TLS 明文 ws 回源入站** `127.0.0.1:<ListenPort+10000>`（`argoOriginInbound`/`ArgoOriginPortDelta`），cloudflared 回源指向它；sing-box 客户端经 argo-443 端到端实测 204。生产已部署，回源日志无 EOF。
+>
+> **遗留待办**：
 3. 移植项②「多 IP 存活兜底订阅」**未开始**。
 4. 固定隧道(token)实机未联调（配好后 13 端口才成立）。
 5. `internal/api/subinfo_test.go::TestRFC5987Escape` **既有失败**（品牌名"亲友团" vs 旧"轻舟"），与本次无关，顺手可修。
@@ -166,7 +169,7 @@ CI（`.github/workflows/ci.yml`）：`go` job（race）、`shell`（脚本语法
 2. SSH 上生产：`ps aux|grep qinyoutuan`、`curl -k https://127.0.0.1/qyt/api/health -H 'Host: myservs.rouroujuxuan.top'`。
 3. 浏览器开 `https://myservs.rouroujuxuan.top/qyt/` 登录（口令在密钥库）。
 4. 订阅页复制订阅链接，客户端导入，确认至少**直连**或 **argo-443**能用。
-5. 有意识地推进 §6.3 待办（先做 6.3-1）。
+5. 有意识地推进 §6.3 遗留待办（6.3-1/6.3-2 已于 2026-09-21 修复，见 §6.3）。
 
 ---
 
