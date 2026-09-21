@@ -101,6 +101,113 @@ func ParseTemporaryHostname(log string) string {
 	return all[len(all)-1]
 }
 
+// argoUnitName makes an inbound tag safe to use as a systemd unit / dir name.
+func argoUnitName(tag string) string {
+	var b strings.Builder
+	for _, r := range tag {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('_')
+		}
+	}
+	return b.String()
+}
+
+// parseArgoMarkers reads the two markers a remote/local ensure script prints:
+// ARGO_CHANGED=<0|1> and ARGO_HOST=<host>.
+func parseArgoMarkers(out string) (changed bool, host string) {
+	for _, ln := range strings.Split(out, "\n") {
+		ln = strings.TrimSpace(ln)
+		if strings.HasPrefix(ln, "ARGO_CHANGED=") {
+			changed = strings.TrimSpace(strings.TrimPrefix(ln, "ARGO_CHANGED=")) == "1"
+		} else if strings.HasPrefix(ln, "ARGO_HOST=") {
+			host = strings.TrimSpace(strings.TrimPrefix(ln, "ARGO_HOST="))
+		}
+	}
+	return changed, host
+}
+
+// RemoteEnsureScript renders a root bash script that reconciles cloudflared ON a
+// REMOTE landing machine (stage E). It (re)writes the per-inbound systemd unit
+// only when its content changed — mirroring EnsureLocalArgo, so a restart — and a
+// quick-tunnel hostname change — only happens when it must — then prints two
+// machine-readable lines the panel parses:
+//
+//	ARGO_CHANGED=<0|1>
+//	ARGO_HOST=<host>        (fixed → stored domain; temporary → latest from log)
+//
+// The panel feeds this to an SSH runner (see EnsureRemoteArgo). tag names the
+// unit file so independent inbounds on one machine don't clobber each other.
+func RemoteEnsureScript(spec ArgoSpec, tag, bin, unitDir, logDir string) (string, error) {
+	if _, err := ArgoArgs(spec); err != nil {
+		return "", err // reject disabled/bad specs here rather than emit a dead script
+	}
+	name := "cloudflared-" + argoUnitName(tag) + ".service"
+	// These paths are baked into a LINUX bash script, so always join with "/",
+	// never filepath.Join — on Windows that would emit backslashes the node
+	// cannot parse.
+	unitPath := unitDir + "/" + name
+	logfile := logDir + "/" + name + ".log"
+	// The unit embedded here comes from the SAME CloudflaredServiceUnit as the
+	// local path, so both always render identical ExecStart/restart policy.
+	unit := CloudflaredServiceUnit(bin, logfile, spec)
+	hostExpr := `""`
+	if spec.Mode == "fixed" {
+		hostExpr = spec.Domain
+	} else {
+		// temporary: grab the latest trycloudflare host from the app logfile
+		hostExpr = `$(tail -n 200 "` + logfile + `" 2>/dev/null | grep -oE '[a-zA-Z0-9-]+\.trycloudflare\.com' | tail -1 || true)`
+	}
+	return fmt.Sprintf(`#!/bin/bash
+set -e
+mkdir -p %q %q
+desired=$(cat <<'QZUNIT'
+%s
+QZUNIT
+)
+unit=%q
+if [ "$(cat "$unit" 2>/dev/null || true)" != "$desired" ]; then
+  printf '%%s\n' "$desired" > "$unit"
+  systemctl daemon-reload >/dev/null 2>&1 || true
+  systemctl enable %q >/dev/null 2>&1 || true
+  systemctl restart %q
+  echo ARGO_CHANGED=1
+else
+  echo ARGO_CHANGED=0
+fi
+echo ARGO_HOST=%s
+`, unitDir, logDir, unit, unitPath, name, name, hostExpr), nil
+}
+
+// EnsureRemoteArgo reconciles cloudflared on a REMOTE landing machine. run
+// executes a shell command on that box (the caller injects an SSH runner; the
+// command must run as root there). Returns the tunnel hostname and whether the
+// unit was rewritten. The hostname is cached under tag via SetArgoHost, so the
+// subscription layer (BuildSelfBuiltLinks) emits the 13-port CDN links for this
+// remote argo inbound too. run being injected keeps this fully testable without
+// a live SSH session.
+func EnsureRemoteArgo(ctx context.Context, run func(ctx context.Context, cmd string) (string, error),
+	spec ArgoSpec, tag, bin, unitDir, logDir string) (string, bool, error) {
+	if !spec.Enabled() {
+		ClearArgoHost(tag)
+		return "", false, nil
+	}
+	script, err := RemoteEnsureScript(spec, tag, bin, unitDir, logDir)
+	if err != nil {
+		return "", false, err
+	}
+	out, err := run(ctx, script)
+	if err != nil {
+		return "", false, err
+	}
+	changed, host := parseArgoMarkers(out)
+	if host != "" {
+		SetArgoHost(tag, host)
+	}
+	return host, changed, nil
+}
+
 // CloudflaredBin is the default install location used by install-singbox.sh's
 // --with-argo path (stage B). Listed first so FindCloudflaredBin prefers it.
 var CloudflaredBin = "/usr/local/bin/cloudflared"
