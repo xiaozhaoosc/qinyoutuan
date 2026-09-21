@@ -115,7 +115,7 @@ func TestRFC5987Escape(t *testing.T) {
 		"a=b":        "a%3Db",
 		"a:b":        "a%3Ab",
 		"a\"b":       "a%22b",
-		"亲友团":         "%E8%BD%BB%E8%88%9F",
+		"亲友团":         "%E4%BA%B2%E5%8F%8B%E5%9B%A2",
 	} {
 		if got := rfc5987Escape(in); got != want {
 			t.Errorf("rfc5987Escape(%q) = %q, want %q", in, got, want)
