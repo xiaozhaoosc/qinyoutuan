@@ -126,9 +126,10 @@ ssh -i oracle/ssh-key-2026-09-20.key ubuntu@64.181.244.178
 - 生产已设 `node_host_override=64.181.244.178`、`free_group_id=1`。
 
 ### 6.3 已知技术债 / 待办（按优先级）
-> ✅ **2026-09-21 已解决**（提交 `ea0f6fe`）：
+> ✅ **2026-09-21 已解决**（提交 `ea0f6fe` / `3a677f3`）：
 > 1. 临时隧道 13 端口错配 —— 根因：quick tunnel 只服务 443(80)。已改：`temporary` 只下发 `443` 一个 argo 节点，`fixed` 才展开 13 端口（`argoVariantLinks` 按 `mode` 区分）。
 > 2. argo 回源 502/EOF —— 根因：cloudflared 回源到 Reality(TLS) 入站，明文 HTTP 被 sing-box 秒断（`Unable to reach the origin service: EOF`）。已改：config 生成时派生**无 TLS 明文 ws 回源入站** `127.0.0.1:<ListenPort+10000>`（`argoOriginInbound`/`ArgoOriginPortDelta`），cloudflared 回源指向它；sing-box 客户端经 argo-443 端到端实测 204。生产已部署，回源日志无 EOF。
+> 3. vmess+Reality 直连节点失败 —— 根因：`BuildShareLink` 的 vmess 分支不输出 Reality 参数（`security/pbk/sid`），且 subconv 渲染时硬编码 `sbTLS(p,"tls")`、用 `param()` 读不到 vmess JSON 里的 pbk/sid。已改：vmess 链接 JSON 补 `security=reality/pbk/sid`，subconv 透传 security 并改用 `tlsParam` 读 pbk/sid；argo 变体清空 Reality（CF 边缘终结 TLS）。直连 20086 端到端实测 204。
 >
 > **遗留待办**：
 3. 移植项②「多 IP 存活兜底订阅」**未开始**。
