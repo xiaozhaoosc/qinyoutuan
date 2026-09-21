@@ -81,7 +81,7 @@ func (a *API) syncRemoteArgo(ctx context.Context, unitDir, logDir string) {
 			return rm.RunCommand(rctx, cfg, "sudo -n bash <<'QZEOF'\n"+cmd+"\nQZEOF\n")
 		}
 		for _, ib := range targets {
-			spec := sbproc.ArgoSpec{Mode: ib.ArgoMode, Auth: ib.ArgoAuth, Domain: ib.ArgoDomain, TargetPort: ib.ListenPort}
+			spec := sbproc.ArgoSpec{Mode: ib.ArgoMode, Auth: ib.ArgoAuth, Domain: ib.ArgoDomain, TargetPort: ib.ListenPort + sbproc.ArgoOriginPortDelta}
 			if _, changed, err := sbproc.EnsureRemoteArgo(ctx, run, spec, ib.Tag, sbproc.CloudflaredBin, unitDir, logDir); err != nil {
 				log.Printf("argo sync: server %d inbound %s: %v", sv.ID, ib.Tag, err)
 			} else if changed {

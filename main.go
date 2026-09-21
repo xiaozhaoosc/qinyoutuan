@@ -279,7 +279,7 @@ func reconcileLocalArgo(ctx context.Context, st *store.Store, bin, unitDir, logD
 			Mode:       ib.ArgoMode,
 			Auth:       ib.ArgoAuth,
 			Domain:     ib.ArgoDomain,
-			TargetPort: ib.ListenPort,
+			TargetPort: ib.ListenPort + sbproc.ArgoOriginPortDelta,
 		}
 		tag := safeFile(ib.Tag)
 		unitPath := filepath.Join(unitDir, "cloudflared-"+tag+".service")

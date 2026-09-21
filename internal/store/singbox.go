@@ -659,7 +659,12 @@ func (s *Store) BuildSingboxConfig(base, v2rayListen string, usersByTag map[stri
 		if tlsBlock != nil {
 			baseMap["tls"] = tlsBlock
 		}
-		ibs = append(ibs, singbox.Inbound{Type: ib.Type, Base: baseMap, Users: mergeRelayUser(usersByTag[ib.Tag], landingUsers, ib.Tag)})
+		users := mergeRelayUser(usersByTag[ib.Tag], landingUsers, ib.Tag)
+		ibs = append(ibs, singbox.Inbound{Type: ib.Type, Base: baseMap, Users: users})
+		// Argo 回源：cloudflared 只发明文 HTTP，须派生无 TLS 的 ws 入站（127.0.0.1）
+		if origin := argoOriginInbound(ib, users, 0); origin != nil {
+			ibs = append(ibs, *origin)
+		}
 	}
 	return singbox.GenerateConfigWithOptions([]byte(base), ibs, singbox.Options{
 		V2RayListen:  v2rayListen,
@@ -717,7 +722,12 @@ func (s *Store) BuildSingboxConfigForServer(serverID int64, base, v2rayListen st
 		if tlsBlock != nil {
 			baseMap["tls"] = tlsBlock
 		}
-		ibs = append(ibs, singbox.Inbound{Type: ib.Type, Base: baseMap, Users: mergeRelayUser(usersByTag[ib.Tag], landingUsers, ib.Tag)})
+		users := mergeRelayUser(usersByTag[ib.Tag], landingUsers, ib.Tag)
+		ibs = append(ibs, singbox.Inbound{Type: ib.Type, Base: baseMap, Users: users})
+		// Argo 回源：cloudflared 只发明文 HTTP，须派生无 TLS 的 ws 入站（127.0.0.1）
+		if origin := argoOriginInbound(ib, users, serverID); origin != nil {
+			ibs = append(ibs, *origin)
+		}
 	}
 	// Remote servers may not have v2ray_api compiled in; pass empty to skip.
 	// v2rayListen == "" skips the experimental.v2ray_api block. Remote servers
@@ -755,28 +765,79 @@ var argoCDNPorts = []struct {
 }
 
 // argoSpec maps an argo-exposed inbound to its cloudflared tunnel spec. The
-// quick tunnel fronts the inbound on its own loopback listen port.
+// quick tunnel fronts the plaintext origin inbound (127.0.0.1:ListenPort+delta)
+// derived by argoOriginInbound, never the inbound's own TLS/Reality port.
 func (ib *SbInbound) argoSpec() sbproc.ArgoSpec {
 	return sbproc.ArgoSpec{
 		Mode:       ib.ArgoMode,
 		Auth:       ib.ArgoAuth,
 		Domain:     ib.ArgoDomain,
-		TargetPort: ib.ListenPort,
+		TargetPort: ib.ListenPort + sbproc.ArgoOriginPortDelta,
 	}
 }
 
-// argoVariantLinks expands a single base node link into the 13-port CDN set for
+// argoOriginInbound derives the plaintext ws origin inbound that backs an argo
+// tunnel on the machine running the tunnel (the inbound's own server).
+// cloudflared fronts this loopback inbound (plain HTTP), never the inbound's
+// TLS/Reality listen port. Shares the same users as the public inbound so the
+// same uuid works end to end; the ws path is taken from the inbound options so
+// it matches what clients dial. originOnServer is the server whose config is
+// being built — only an argo inbound that lives on that same server gets an
+// origin here. Returns nil when the inbound is not argo-exposed.
+func argoOriginInbound(ib *SbInbound, users []singbox.User, originOnServer int64) *singbox.Inbound {
+	if !ib.ArgoEnabled || ib.Type != "vmess" || ib.ArgoMode == "" || ib.ServerID != originOnServer {
+		return nil
+	}
+	// 客户端走隧道时携带的 ws path 必须与回源入站一致，否则 sing-box 404
+	path := "/ws"
+	if ib.Options != "" && ib.Options != "{}" {
+		var opts map[string]interface{}
+		if err := json.Unmarshal([]byte(ib.Options), &opts); err == nil {
+			if tr, ok := opts["transport"].(map[string]interface{}); ok {
+				if p, ok := tr["path"].(string); ok && p != "" {
+					path = p
+				}
+			}
+		}
+	}
+	base := map[string]interface{}{
+		"type":        ib.Type,
+		"tag":         ib.Tag + "-argo-origin",
+		"listen":      "127.0.0.1",
+		"listen_port": ib.ListenPort + sbproc.ArgoOriginPortDelta,
+		"transport": map[string]interface{}{
+			"type": "ws",
+			"path": path,
+		},
+	}
+	return &singbox.Inbound{Type: ib.Type, Base: base, Users: users}
+}
+
+// argoVariantLinks expands a single base node link into the CDN port set for
 // an argo tunnel. argoHost is the tunnel hostname clients must send as
 // Host/SNI; the dial address resolves through Cloudflare's anycast, so a blocked
 // landing IP never takes the node offline. Returns nil when no host is known yet
 // (a temporary tunnel still connecting). Only meaningful for ws-transport
 // (typically vmess) links.
-func argoVariantLinks(base singbox.LinkParams, argoHost string) []singbox.LinkParams {
+//
+// mode narrows the port set: a quick tunnel (`*.trycloudflare.com`) only serves
+// port 443 (and 80), so "temporary" emits just the 443 node — the other 12
+// non-443 ports would all time out. A fixed tunnel owns its DNS at the edge and
+// can carry all 13 CDN ports.
+func argoVariantLinks(base singbox.LinkParams, argoHost, mode string) []singbox.LinkParams {
 	if argoHost == "" {
 		return nil
 	}
-	out := make([]singbox.LinkParams, 0, len(argoCDNPorts))
-	for _, cp := range argoCDNPorts {
+	ports := argoCDNPorts
+	if mode == "temporary" {
+		// quick tunnel 只服务 443(80)；temporary 只下发 443，避免其余 12 个端口全超时
+		ports = []struct {
+			port int
+			tls  bool
+		}{{443, true}}
+	}
+	out := make([]singbox.LinkParams, 0, len(ports))
+	for _, cp := range ports {
 		v := base
 		v.Host = argoHost
 		v.Port = cp.port
@@ -1066,7 +1127,7 @@ func (s *Store) BuildSelfBuiltLinks(u *User, host string) []SelfBuiltLink {
 			} else {
 				host = sbproc.ArgoHost(ib.Tag)
 			}
-			for _, av := range argoVariantLinks(p, host) {
+			for _, av := range argoVariantLinks(p, host, spec.Mode) {
 				if l := singbox.BuildShareLink(av); l != "" {
 					out = append(out, SelfBuiltLink{NodeID: logicalID, Tag: ib.Tag, Link: l})
 				}

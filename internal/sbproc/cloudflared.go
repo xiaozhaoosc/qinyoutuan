@@ -31,9 +31,18 @@ import (
 //     connects to a tunnel the operator already created; its public hostname is
 //     fixed ahead of time (stored in ArgoSpec.Domain), so no log parsing needed.
 
+// ArgoOriginPortDelta is the loopback port offset for the plaintext ws origin
+// inbound that backs an argo tunnel. cloudflared speaks plain HTTP to its
+// origin, so it must NOT front the inbound's real TLS/Reality listen port
+// (which only accepts TLS handshakes and drops plaintext with EOF). The config
+// builder emits a separate 127.0.0.1-only vmess-ws inbound on
+// ListenPort+ArgoOriginPortDelta and the tunnel points there instead.
+const ArgoOriginPortDelta = 10000
+
 // ArgoSpec describes how one argo-exposed inbound should be fronted by
 // cloudflared. It is derived from the inbound's Argo* fields plus the local
-// loopback port of the vmess WS inbound it wraps.
+// loopback port of the plaintext vmess WS origin inbound it wraps (see
+// ArgoOriginPortDelta).
 type ArgoSpec struct {
 	// Mode is "" (disabled/not argo), "temporary", or "fixed".
 	Mode string
