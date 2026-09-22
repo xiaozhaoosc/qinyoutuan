@@ -1,10 +1,12 @@
 <template>
   <div>
-    <!-- 页面头 -->
-    <div class="dash-head">
-      <div>
-        <h2 class="page-title">控制台</h2>
-        <p class="page-sub">{{ greeting }}，{{ auth.user?.username }}，这里是你的服务概览</p>
+    <!-- 专属版式页头：品牌渐变 + 光晕的科技头部，问候语与关键状态在此汇总 -->
+    <div class="dash-hero">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-main">
+        <span class="hero-eyebrow">QINYOUTUAN · 控制台</span>
+        <h2 class="hero-title">{{ greeting }}，{{ auth.user?.username }}</h2>
+        <p class="hero-sub">这里是你的服务概览：流量、套餐与使用趋势一目了然</p>
       </div>
       <div class="dash-actions">
         <n-button size="small" quaternary :loading="refreshing" @click="reload">
@@ -19,6 +21,10 @@
           <template #icon><n-icon><CartOutline /></n-icon></template>
           去商城
         </n-button>
+      </div>
+      <div class="hero-badges">
+        <span class="hb" :class="activeCount ? 'ok' : 'idle'"><i></i>{{ activeCount ? `生效 ${activeCount} 份套餐` : '暂无生效套餐' }}</span>
+        <span class="hb accent">{{ queuedCount ? `排队 ${queuedCount} 份` : '服务运行正常' }}</span>
       </div>
     </div>
 
@@ -315,6 +321,46 @@ a{color:var(--accent-strong)}
 .sec-title{font-weight:650;font-size:14px}
 .sec-link{font-size:12px;font-weight:400;margin-left:10px}
 
+/* —— 专属版式：品牌渐变 + 光晕的科技头部 —— */
+.dash-hero {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  margin-bottom: 20px; padding: 20px 22px;
+  border: 1px solid var(--border); border-radius: var(--r);
+  background: color-mix(in srgb, var(--card) 82%, var(--accent-subtle));
+  box-shadow: var(--shadow-sm);
+}
+/* 顶部一条品牌渐变细线：与全局卡片 hover 顶条相呼应，静态常驻 */
+.dash-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--brand-gradient); border-radius: var(--r) var(--r) 0 0;
+}
+/* 右上角暗光晕：科技感的关键，浅色下淡、深色下稍亮 */
+.hero-glow {
+  position: absolute; top: -70%; right: -8%; width: 46%; aspect-ratio: 1; z-index: -1;
+  background: radial-gradient(circle, var(--brand-gradient) 0%, transparent 70%);
+  opacity: .16; filter: blur(18px); pointer-events: none;
+}
+.hero-main { min-width: 0; }
+.hero-eyebrow {
+  display: inline-block; margin-bottom: 6px; font-size: 11px; font-weight: 700;
+  letter-spacing: .12em; color: var(--accent); text-transform: uppercase;
+}
+.hero-title { margin: 0; font-size: 23px; font-weight: 750; letter-spacing: -.025em; line-height: 1.2; }
+.hero-sub { margin: 6px 0 0; color: var(--text-3); font-size: 12.5px; line-height: 1.6; }
+.hero-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.hb {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border: 1px solid var(--border); border-radius: 999px; background: var(--bg-soft);
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+}
+.hb i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+.hb.ok { color: var(--success); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
+.hb.ok i { background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 18%, transparent); }
+.hb.idle { color: var(--warn); }
+.hb.idle i { background: var(--warn); }
+.hb.accent { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+
 /* 提醒 */
 .dash-alert{margin-bottom:10px}
 .alert-enter-active,.alert-leave-active{transition:opacity .25s ease,transform .25s ease}
@@ -344,11 +390,13 @@ a{color:var(--accent-strong)}
 .ring-wrap{display:flex;flex-direction:column;align-items:center;padding:4px 0 2px}
 .ring-box{position:relative;width:150px;height:150px}
 .ring-svg{width:100%;height:100%;transform:rotate(-90deg)}
-.ring-arc{transition:stroke-dashoffset .8s cubic-bezier(.22,1,.36,1),stroke .4s ease}
+/* 进度弧跟随当前状态色发一层柔光，让「用得越多」在视觉上更有存在感 */
+.ring-arc{transition:stroke-dashoffset .8s cubic-bezier(.22,1,.36,1),stroke .4s ease;filter:drop-shadow(0 0 6px currentColor)}
 .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ring-pct{font-size:26px;font-weight:750;letter-spacing:-0.02em;line-height:1;font-variant-numeric:tabular-nums}
+.ring-pct{font-size:26px;font-weight:750;letter-spacing:-0.02em;line-height:1;font-variant-numeric:tabular-nums;background:var(--brand-gradient);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
 .ring-pct i{font-style:normal;font-size:15px;font-weight:650;margin-left:1px}
-.ring-inf{font-size:30px}
+/* 无额度时颜色要如实，不能套品牌渐变 */
+.ring-inf{-webkit-text-fill-color:var(--text-3);color:var(--text-3);background:none}
 .ring-label{font-size:11px;color:var(--text-3);margin-top:4px}
 .ring-foot{font-size:12px;color:var(--text-2);margin-top:10px;text-align:center}
 .usage-card :deep(.n-space){gap:6px!important}

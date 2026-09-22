@@ -16,19 +16,27 @@
       </n-space>
     </div>
 
-    <div class="sub-summary" aria-label="订阅状态摘要">
-      <div class="sub-stat"><span>生效套餐</span><b>{{ activePlanCount }}</b><small>排队 {{ queuedPlanCount }} 份</small></div>
-      <div class="sub-stat"><span>可用节点</span><b>{{ enabledNodeCount }} / {{ nodes.length }}</b><small>禁用 {{ disabledNodeCount }} 个</small></div>
-      <div class="sub-stat"><span>代理入口</span><b>{{ proxies.length }}</b><small>HTTP / SOCKS5 / HTTPS</small></div>
-      <div class="sub-stat"><span>订阅状态</span><b>{{ sub.url ? '已就绪' : '未生成' }}</b><small>{{ sub.url ? '支持 4 种导入格式' : '购买或分配套餐后生成' }}</small></div>
+    <!-- 顶部摘要：品牌渐变 + 光晕的科技信息带，一眼看到当前状态要点 -->
+    <div class="sub-hero" aria-label="订阅状态摘要">
+      <span class="sub-hero-title">我的订阅</span>
+      <div class="sub-summary">
+        <div class="sub-stat"><span>生效套餐</span><b>{{ activePlanCount }}</b><small>排队 {{ queuedPlanCount }} 份</small></div>
+        <div class="sub-stat"><span>可用节点</span><b>{{ enabledNodeCount }} / {{ nodes.length }}</b><small>禁用 {{ disabledNodeCount }} 个</small></div>
+        <div class="sub-stat"><span>代理入口</span><b>{{ proxies.length }}</b><small>HTTP / SOCKS5 / HTTPS</small></div>
+        <div class="sub-stat"><span>订阅状态</span><b>{{ sub.url ? '已就绪' : '未生成' }}</b><small>{{ sub.url ? '支持 4 种导入格式' : '购买或分配套餐后生成' }}</small></div>
+      </div>
     </div>
 
-    <!-- 订阅链接 -->
-    <n-card size="small" class="sec sub-link-card">
-      <template #header>
-        <span class="sec-title">订阅链接</span>
-        <span class="sec-caption">复制后导入客户端，地址包含访问凭据，请勿公开分享</span>
-      </template>
+    <!-- 订阅链接：专属设计的核心操作卡 -->
+    <div class="sec sub-link-card">
+      <div class="sl-glow" aria-hidden="true"></div>
+      <div class="sl-head">
+        <div>
+          <span class="sl-eyebrow">SUBSCRIPTION</span>
+          <span class="sl-title">订阅链接</span>
+        </div>
+        <span class="sl-caption">复制后导入客户端，地址包含访问凭据，请勿公开分享</span>
+      </div>
       <div class="routing-choice">
         <div class="routing-choice-label">原生配置代理范围</div>
         <n-select v-model:value="routingProfile" :options="routingProfileOptions" size="small" class="routing-choice-select" />
@@ -82,7 +90,7 @@
         <canvas ref="qrCanvas" />
         <div style="font-size:11px;color:var(--text-3);margin-top:4px;">手机扫描导入订阅</div>
       </div>
-    </n-card>
+    </div>
 
     <!-- 我的套餐：每个套餐独立计量，各自展示剩余流量与到期时间（可能多份并存，不合并） -->
     <n-card v-if="plans.length" size="small" class="sec" title="我的套餐">
@@ -824,14 +832,64 @@ onMounted(async () => {
 .sec { margin-bottom: 16px; border-radius: var(--r-sm); }
 .sec-title { font-weight: 650; font-size: 14px; }
 .sec-caption { margin-left: 10px; color: var(--text-3); font-size: 11.5px; font-weight: 400; }
+
+/* —— 专属版式：顶部摘要品牌渐变信息带 —— */
+.sub-hero {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  margin-bottom: 16px; padding: 16px 18px;
+  border: 1px solid var(--border); border-radius: var(--r);
+  background: color-mix(in srgb, var(--card) 82%, var(--accent-subtle));
+  box-shadow: var(--shadow-sm);
+}
+.sub-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--brand-gradient); border-radius: var(--r) var(--r) 0 0;
+}
+/* 左侧品牌渐变标题竖条，锚定「我的订阅」这一版块身份 */
+.sub-hero-title {
+  flex: none; align-self: stretch; display: flex; align-items: center;
+  writing-mode: horizontal-tb; font-size: 15px; font-weight: 750; letter-spacing: .01em;
+  padding-left: 14px; border-left: 3px solid var(--accent);
+  color: var(--text); white-space: nowrap;
+}
+.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; flex: 1; min-width: 0; }
+.sub-stat { min-width: 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); box-shadow: var(--shadow-sm); transition: transform .3s var(--ease-emphasized), border-color .25s var(--ease-standard), box-shadow .3s var(--ease-standard); }
+.sub-stat:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: var(--shadow); }
+.sub-stat span, .sub-stat small { display: block; color: var(--text-3); font-size: 11px; }
+.sub-stat b { display: block; margin: 3px 0 2px; color: var(--text); font-size: 18px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.sub-stat small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .routing-choice { display: grid; grid-template-columns: 58px minmax(180px, 240px) 1fr; align-items: center; gap: 8px; margin-bottom: 10px; }
 .routing-choice-label { color: var(--text-3); font-size: 11px; }
 .routing-choice-note, .routing-compat-note { color: var(--text-3); font-size: 11px; line-height: 1.6; }
 .routing-compat-note { margin-top: 5px; }
-.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
-.sub-stat { min-width: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); box-shadow: var(--shadow-sm); }
-.sub-stat span, .sub-stat small { display: block; color: var(--text-3); font-size: 11px; }
-.sub-stat b { display: block; margin: 3px 0 2px; color: var(--text); font-size: 18px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+
+/* —— 专属版式：订阅链接核心操作卡 —— */
+.sub-link-card {
+  position: relative; overflow: hidden; isolation: isolate;
+  padding: 18px 20px 16px;
+  border: 1px solid var(--border); border-radius: var(--r);
+  background: var(--card); box-shadow: var(--shadow-sm);
+}
+.sub-link-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--brand-gradient); opacity: .9;
+}
+.sl-glow {
+  position: absolute; top: -70%; left: -6%; width: 44%; aspect-ratio: 1; z-index: -1;
+  background: radial-gradient(circle, var(--brand-gradient) 0%, transparent 70%);
+  opacity: .13; filter: blur(20px); pointer-events: none;
+}
+.sl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.sl-head > div { display: flex; align-items: baseline; gap: 10px; }
+.sl-eyebrow {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .14em;
+  color: var(--accent); text-transform: uppercase;
+}
+.sl-title { font-size: 16px; font-weight: 750; letter-spacing: -.01em; }
+.sl-caption { color: var(--text-3); font-size: 11.5px; }
+/* 链接本身用等宽字，更像「一串凭据」而不是普通文本 */
+.sub-link-card .n-input-group :deep(.n-input__inner) { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; letter-spacing: .01em; }
 .sub-action-row { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
 .sub-action-row.safety { padding-top: 10px; border-top: 1px solid var(--border); }
 .sub-action-label { width: 58px; flex: 0 0 58px; color: var(--text-3); font-size: 11px; }
