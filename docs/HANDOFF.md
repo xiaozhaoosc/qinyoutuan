@@ -1,7 +1,7 @@
 # 亲友团 (QinYouTuan / QingZhou) 开发&运维交接文档
 
 > 面向团队：换设备/换机器/换人接手本项目的**一站式指引**。
-> 最后更新：2026-09-21
+> 最后更新：2026-09-23
 
 ---
 
@@ -16,7 +16,7 @@
 | 服务器 SSH | 私钥：本地 `oracle/ssh-key-2026-09-20.key`（**禁止入 git**，见 §8) |
 | 面板 | nginx 反代，地址 `https://myservs.rouroujuxuan.top/qyt/` |
 | 已被植入 | **Cloudflare Argo 隧道接入**（阶段 A–G 见 §5） |
-| 自动化测试 | `scripts/test-argo.sh`（见 §7） |
+| 自动化测试 | `scripts/test-full.sh`（完整 10 步流水线，产物落 `docs/test-report/`）见 §7 |
 | CI | `.github/workflows/ci.yml`（`argo-suite` + `frontend`） |
 
 ---
@@ -132,24 +132,33 @@ ssh -i oracle/ssh-key-2026-09-20.key ubuntu@64.181.244.178
 > 3. vmess+Reality 直连节点失败 —— 根因：`BuildShareLink` 的 vmess 分支不输出 Reality 参数（`security/pbk/sid`），且 subconv 渲染时硬编码 `sbTLS(p,"tls")`、用 `param()` 读不到 vmess JSON 里的 pbk/sid。已改：vmess 链接 JSON 补 `security=reality/pbk/sid`，subconv 透传 security 并改用 `tlsParam` 读 pbk/sid；argo 变体清空 Reality（CF 边缘终结 TLS）。直连 20086 端到端实测 204。
 >
 > **遗留待办**：
-3. 移植项②「多 IP 存活兜底订阅」**未开始**。
+3. 移植项②「多 IP 存活兜底订阅」**后端+前端已完成**（`sb_inbounds.fallback_hosts` 列 + liveness 探测选主 + 备选 `-ipN` 变体；入站表单「备选 IP/域名」标签编辑）。**待真实第二公网 IP 端到端联调**。
 4. 固定隧道(token)实机未联调（配好后 13 端口才成立）。
-5. `internal/api/subinfo_test.go::TestRFC5987Escape` **既有失败**（品牌名"亲友团" vs 旧"轻舟"），与本次无关，顺手可修。
 6. 本机 Docker `build` 依赖可用镜像源/代理（曾 403/525；`Dockerfile` 已去掉 `# syntax` 前端镜像依赖减轻此问题）。
+
+> ✅ **已修复**：
+> 7. `TestRFC5987Escape` 既有失败 —— 已随品牌统一为"亲友团"（服务器 `go test -race ./...` 全绿确认通过），非遗留。
+> 8. 监控详情图长范围静默截断 —— `ListMetrics` 5000 行上限在 30s 采样下使 7d/30d 只显示最近约 1.7 天；改为分时下采样覆盖全窗口（提交 `c48f154`）。
+> 9. 流量采样默认周期 10→5 min —— 缩小换 IP 触发 sing-box 重启导致的瞬态丢数窗口（提交 `68b5e52`）。
 
 ---
 
 ## 7. 测试与 CI
 
 ```bash
-# 本地：Argo 专项（编译+vet+单测+语法+启动冒烟=6 项）
-bash scripts/test-argo.sh
-# 或指定 go：GO=/path/to/go bash scripts/test-argo.sh；跳过冒烟 --no-smoke
+# 完整自动化流水线（10 步：Go build/vet/test-race + 用例清单 + shell 语法 +
+# Argo 专项 + 前端 test/typecheck/build + 启动冒烟），产物落盘 docs/test-report/
+bash scripts/test-full.sh
+# 后端快速回归（跳过前端三步）
+bash scripts/test-full.sh --no-frontend
+# 或指定 go：GO=/path/to/go bash scripts/test-full.sh；跳过冒烟 --no-smoke
+# 用法详见 docs/test-report/README.md
 
-go test ./internal/sbproc/ ./internal/store/   # 核心包全量
+# Legacy：Argo 专项（编译+vet+单测+语法+启动冒烟=6 项）
+bash scripts/test-argo.sh
 ```
 CI（`.github/workflows/ci.yml`）：`go` job（race）、`shell`（脚本语法）、`frontend`（npm test+build）、`argo-suite`（跑 test-argo.sh）。
-> 注：`scripts/test-argo.sh` 用 `-buildvcs=false`（Git for Windows 的 VCS 探测问题）、临时库启动冒烟（/api/health）。
+> 注：`test-full.sh` 与本仓 CI 对齐，可作为本机/服务器跑的本地 CI；`test-argo.sh` 是其中第 6 步子套件。两者均用 `-buildvcs=false`（Git for Windows 的 VCS 探测问题）、临时库启动冒烟（/api/health）。race 需 cgo，本机 Windows 建议到服务器(Linux 有 systemd+gcc)跑，才能覆盖 sbctl 相关测试。
 
 ---
 
