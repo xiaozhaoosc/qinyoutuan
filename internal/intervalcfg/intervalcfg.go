@@ -22,7 +22,7 @@ const (
 	EnvReconcileInterval = "QZ_SINGBOX_RECONCILE_INTERVAL"
 
 	DefaultProbeSeconds     int64 = 60
-	DefaultStatsMinutes     int64 = 10
+	DefaultStatsMinutes     int64 = 5
 	DefaultReconcileMinutes int64 = 60
 
 	MinProbeSeconds     int64 = 30

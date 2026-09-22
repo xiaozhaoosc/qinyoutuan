@@ -18,7 +18,7 @@ func TestDefaults(t *testing.T) {
 		t.Fatalf("probe = %v", got)
 	}
 	stats, reconcile := Controller(f)
-	if stats != 10*time.Minute || reconcile != 60*time.Minute {
+	if stats != 5*time.Minute || reconcile != 60*time.Minute {
 		t.Fatalf("controller = %v/%v", stats, reconcile)
 	}
 }
