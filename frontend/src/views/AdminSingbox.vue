@@ -130,6 +130,7 @@
                     <span class="kv">TLS <b :title="tlsName(r.tls_id)">{{ tlsName(r.tls_id) }}</b></span>
                     <span v-if="r.egress_id" class="kv">出口 <b :title="egressName(r.egress_id)">{{ egressName(r.egress_id) }}</b></span>
                     <span v-if="r.argo_enabled" class="kv">Argo <b>{{ r.argo_host || (r.argo_mode === 'fixed' ? r.argo_domain : '…') }}</b></span>
+                    <span v-if="r.fallback_hosts?.length" class="kv">备选 <b>{{ r.fallback_hosts.length }} 个</b></span>
                   </div>
                   <div class="lc-foot">
                     <n-button size="tiny" @click="openInbound(r)">编辑</n-button>
@@ -584,6 +585,20 @@
           <n-form-item label="名称 / Tag"><n-input v-model:value="ie.tag" /></n-form-item>
           <n-form-item label="监听地址"><n-select v-model:value="ie.listen" :options="listenOpts" /></n-form-item>
           <n-form-item label="监听端口"><n-input-number v-model:value="ie.listen_port" :min="1" :max="65535" style="width:100%;" /></n-form-item>
+          <n-form-item v-if="['vless','vmess'].includes(ie.type)" label="备选 IP/域名">
+            <div style="width:100%;">
+              <!-- 多 IP 存活兜底：订阅生成时与主 host 一起展开成多条变体节点（Tag 打 -ipN
+                   后缀），客户端 urltest 会自动切到可达的那个。这里用「输入 + 回车添加」的
+                   标签输入，值即 DB 里的 fallback_hosts 数组。 -->
+              <n-tag v-for="(h, i) in ie.fallback_hosts" :key="i" closable :bordered="false" style="margin:2px 4px 2px 0;"
+                     @close="ie.fallback_hosts.splice(i, 1)">
+                {{ h }}
+              </n-tag>
+              <n-input v-model:value="fbInput" size="small" placeholder="输入备选 IP 或域名，回车添加" clearable
+                       @keyup.enter="addFallbackHost" style="margin-top:4px;" />
+              <div class="form-tip">主 host 仍由机器地址决定；这里填同服务在别的公网 IP 上的出口。保存后订阅会额外下发「-ip1 / -ip2 …」变体并优先探测可达的那条（仅 VLESS / VMess）。</div>
+            </div>
+          </n-form-item>
           <n-form-item label="所属服务器"><n-select v-model:value="ie.server_id" :options="serverOpts" v-bind="longSelFor(serverOpts.length)" placeholder="本机" clearable /></n-form-item>
           <n-form-item label="落地 / 中转">
             <div style="width:100%;">
@@ -1514,7 +1529,18 @@ const ie = reactive({
   anytls_idle_check: 0, anytls_idle_timeout: 0, anytls_min_idle: 0,
   mux: false, brutal: false, brutal_up: 0, brutal_down: 0, upstream_inbound_id: 0, egress_id: 0,
   argo_enabled: false, argo_mode: '', argo_auth: '', argo_domain: '', argo_host: '',
+  fallback_hosts: [] as string[],
 })
+// 备选 IP/域名 输入框：回车把一个值塞进 ie.fallback_hosts（去重 + 去空）。
+const fbInput = ref('')
+function addFallbackHost() {
+  const v = fbInput.value.trim()
+  if (v) {
+    if (!ie.fallback_hosts.includes(v)) ie.fallback_hosts.push(v)
+    else message.warning('该地址已在备选列表')
+  }
+  fbInput.value = ''
+}
 
 function resetIe() {
   Object.assign(ie, {
@@ -1525,7 +1551,7 @@ function resetIe() {
     ss_method: '2022-blake3-aes-128-gcm', flow: 'xtls-rprx-vision',
     anytls_idle_check: 0, anytls_idle_timeout: 0, anytls_min_idle: 0,
     mux: false, brutal: false, brutal_up: 0, brutal_down: 0, upstream_inbound_id: 0, egress_id: 0,
-    argo_enabled: false, argo_mode: '', argo_auth: '', argo_domain: '', argo_host: '',
+    argo_enabled: false, argo_mode: '', argo_auth: '', argo_domain: '', argo_host: '', fallback_hosts: [] as string[],
   })
 }
 
@@ -1551,6 +1577,7 @@ function openInbound(n?: any, clone = false) {
       mux: !!mx.enabled, brutal: !!br.enabled, brutal_up: br.up_mbps || 0, brutal_down: br.down_mbps || 0,
       upstream_inbound_id: n.upstream_inbound_id || 0, egress_id: n.egress_id || 0,
       argo_enabled: !!n.argo_enabled, argo_mode: n.argo_mode || '', argo_auth: n.argo_auth || '', argo_domain: n.argo_domain || '', argo_host: n.argo_host || '',
+      fallback_hosts: (n.fallback_hosts || []).slice(),
     })
   } else {
     resetIe()
@@ -1630,7 +1657,7 @@ async function saveInbound() {
       }
       if (ie.mux) { o.multiplex = { enabled: true }; if (ie.brutal) o.multiplex.brutal = { enabled: true, up_mbps: ie.brutal_up, down_mbps: ie.brutal_down } }
     }
-    const body = { type: ie.type, tag: ie.tag, listen: ie.listen || '::', listen_port: ie.listen_port, tls_id: ie.type === 'shadowsocks' ? 0 : (ie.tls_id || 0), server_id: ie.server_id || 0, enabled: ie.enabled, upstream_inbound_id: ie.upstream_inbound_id || 0, egress_id: ie.egress_id || 0, argo_enabled: ie.argo_enabled, argo_mode: ie.argo_enabled ? (ie.argo_mode || 'temporary') : '', argo_auth: ie.argo_auth || '', argo_domain: ie.argo_domain || '', options: JSON.stringify(o) }
+    const body = { type: ie.type, tag: ie.tag, listen: ie.listen || '::', listen_port: ie.listen_port, tls_id: ie.type === 'shadowsocks' ? 0 : (ie.tls_id || 0), server_id: ie.server_id || 0, enabled: ie.enabled, upstream_inbound_id: ie.upstream_inbound_id || 0, egress_id: ie.egress_id || 0, argo_enabled: ie.argo_enabled, argo_mode: ie.argo_enabled ? (ie.argo_mode || 'temporary') : '', argo_auth: ie.argo_auth || '', argo_domain: ie.argo_domain || '', fallback_hosts: ie.fallback_hosts || [], options: JSON.stringify(o) }
     const fn = ie.id ? apiPut : apiPost
     const url = ie.id ? '/api/admin/sb/inbounds/' + ie.id : '/api/admin/sb/inbounds'
     const created = await fn(url, body)
