@@ -87,11 +87,36 @@ type SbInbound struct {
 	// Read-only, populated by the store read paths from sbproc's runtime cache;
 	// never persisted. Lets the UI show "隧道域名" without another lookup.
 	ArgoHost string `json:"argo_host"`
+	// FallbackHosts 是同服务的备选出口 IP/域名列表（不含主 host，主 host 仍由
+	// node_host_override / Server.Host 决定）。订阅生成时与主 host 一起展开成多条
+	// 变体节点（Tag 打 -ipN 后缀），并用可达性探测挑当前可用者作主。为空 = 单 host 旧行为。
+	FallbackHosts []string `json:"fallback_hosts"`
 	CreatedAt   int64  `json:"created_at"`
 	UpdatedAt   int64  `json:"updated_at"`
 }
 
 // ---- sb_tls ----
+
+// marshalHosts 把备选 host 列表序列化为 DB 存储串（JSON 数组；空->""）。
+func marshalHosts(hs []string) string {
+	if len(hs) == 0 {
+		return ""
+	}
+	b, _ := json.Marshal(hs)
+	return string(b)
+}
+
+// parseHosts 把 DB 存储串解析回备选 host 列表；空/非法返回 nil。
+func parseHosts(s string) []string {
+	if s == "" {
+		return nil
+	}
+	var hs []string
+	if json.Unmarshal([]byte(s), &hs) == nil {
+		return hs
+	}
+	return nil
+}
 
 func (s *Store) ListSbTls() ([]*SbTls, error) {
 	rows, err := s.db.Query(`SELECT id, server_id, name, mode, server_json, client_json, cert_id, sort_order, created_at, updated_at
@@ -260,7 +285,7 @@ func (s *Store) resolveTlsBlock(tlsID int64, tag string, tlsCache map[int64]*SbT
 // ---- sb_inbounds ----
 
 func (s *Store) ListSbInbounds() ([]*SbInbound, error) {
-	rows, err := s.db.Query(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, argo_enabled, argo_mode, argo_auth, argo_domain, created_at, updated_at
+	rows, err := s.db.Query(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, argo_enabled, argo_mode, argo_auth, argo_domain, fallback_hosts, created_at, updated_at
 		FROM sb_inbounds ORDER BY sort_order, id`)
 	if err != nil {
 		return nil, err
@@ -270,7 +295,8 @@ func (s *Store) ListSbInbounds() ([]*SbInbound, error) {
 	for rows.Next() {
 		var n SbInbound
 		var enabled, broken, argoEnabled int
-		if err := rows.Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &n.CreatedAt, &n.UpdatedAt); err != nil {
+		var fb string
+		if err := rows.Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &fb, &n.CreatedAt, &n.UpdatedAt); err != nil {
 			return nil, err
 		}
 		n.Enabled = enabled == 1
@@ -278,6 +304,7 @@ func (s *Store) ListSbInbounds() ([]*SbInbound, error) {
 		n.ArgoEnabled = argoEnabled == 1
 		n.ArgoAuth, _ = s.decryptOK(n.ArgoAuth)
 		n.ArgoHost = sbproc.ArgoHost(n.Tag)
+		n.FallbackHosts = parseHosts(fb)
 		out = append(out, &n)
 	}
 	return out, rows.Err()
@@ -286,8 +313,9 @@ func (s *Store) ListSbInbounds() ([]*SbInbound, error) {
 func (s *Store) GetSbInbound(id int64) (*SbInbound, error) {
 	var n SbInbound
 	var enabled, broken, argoEnabled int
-	err := s.db.QueryRow(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, argo_enabled, argo_mode, argo_auth, argo_domain, created_at, updated_at
-		FROM sb_inbounds WHERE id=?`, id).Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &n.CreatedAt, &n.UpdatedAt)
+	var fb string
+	err := s.db.QueryRow(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, argo_enabled, argo_mode, argo_auth, argo_domain, fallback_hosts, created_at, updated_at
+		FROM sb_inbounds WHERE id=?`, id).Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &fb, &n.CreatedAt, &n.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -299,14 +327,16 @@ func (s *Store) GetSbInbound(id int64) (*SbInbound, error) {
 	n.ArgoEnabled = argoEnabled == 1
 	n.ArgoAuth, _ = s.decryptOK(n.ArgoAuth)
 	n.ArgoHost = sbproc.ArgoHost(n.Tag)
+	n.FallbackHosts = parseHosts(fb)
 	return &n, nil
 }
 
 func (s *Store) GetSbInboundByTag(tag string) (*SbInbound, error) {
 	var n SbInbound
 	var enabled, broken, argoEnabled int
-	err := s.db.QueryRow(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, argo_enabled, argo_mode, argo_auth, argo_domain, created_at, updated_at
-		FROM sb_inbounds WHERE tag=?`, tag).Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &n.CreatedAt, &n.UpdatedAt)
+	var fb string
+	err := s.db.QueryRow(`SELECT id, server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, upstream_broken, argo_enabled, argo_mode, argo_auth, argo_domain, fallback_hosts, created_at, updated_at
+		FROM sb_inbounds WHERE tag=?`, tag).Scan(&n.ID, &n.ServerID, &n.Type, &n.Tag, &n.Listen, &n.ListenPort, &n.TlsID, &n.Options, &enabled, &n.SortOrder, &n.UpstreamInboundID, &n.RelaySecret, &n.EgressID, &broken, &argoEnabled, &n.ArgoMode, &n.ArgoAuth, &n.ArgoDomain, &fb, &n.CreatedAt, &n.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -315,6 +345,7 @@ func (s *Store) GetSbInboundByTag(tag string) (*SbInbound, error) {
 	n.ArgoEnabled = argoEnabled == 1
 	n.ArgoAuth, _ = s.decryptOK(n.ArgoAuth)
 	n.ArgoHost = sbproc.ArgoHost(n.Tag)
+	n.FallbackHosts = parseHosts(fb)
 	return &n, err
 }
 
@@ -336,9 +367,9 @@ func (s *Store) SaveSbInbound(n *SbInbound) (int64, error) {
 			// same note in SaveSbTls.
 			_ = s.db.QueryRow(`SELECT COALESCE(MAX(sort_order),0)+1 FROM sb_inbounds`).Scan(&n.SortOrder)
 		}
-		res, err := s.db.Exec(`INSERT INTO sb_inbounds (server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, argo_enabled, argo_mode, argo_auth, argo_domain, created_at, updated_at)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-			n.ServerID, n.Type, n.Tag, n.Listen, n.ListenPort, n.TlsID, n.Options, b2i(n.Enabled), n.SortOrder, n.UpstreamInboundID, n.RelaySecret, n.EgressID, b2i(n.ArgoEnabled), n.ArgoMode, n.ArgoAuth, n.ArgoDomain, now, now)
+		res, err := s.db.Exec(`INSERT INTO sb_inbounds (server_id, type, tag, listen, listen_port, tls_id, options, enabled, sort_order, upstream_inbound_id, relay_secret, egress_id, argo_enabled, argo_mode, argo_auth, argo_domain, fallback_hosts, created_at, updated_at)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			n.ServerID, n.Type, n.Tag, n.Listen, n.ListenPort, n.TlsID, n.Options, b2i(n.Enabled), n.SortOrder, n.UpstreamInboundID, n.RelaySecret, n.EgressID, b2i(n.ArgoEnabled), n.ArgoMode, n.ArgoAuth, n.ArgoDomain, marshalHosts(n.FallbackHosts), now, now)
 		if err != nil {
 			return 0, err
 		}
@@ -365,9 +396,9 @@ func (s *Store) SaveSbInbound(n *SbInbound) (int64, error) {
 	if n.UpstreamInboundID != 0 || n.EgressID != 0 {
 		rechained = 1
 	}
-	if _, err := tx.Exec(`UPDATE sb_inbounds SET server_id=?, type=?, tag=?, listen=?, listen_port=?, tls_id=?, options=?, enabled=?, sort_order=?, upstream_inbound_id=?, relay_secret=?, egress_id=?, argo_enabled=?, argo_mode=?, argo_auth=?, argo_domain=?,
+	if _, err := tx.Exec(`UPDATE sb_inbounds SET server_id=?, type=?, tag=?, listen=?, listen_port=?, tls_id=?, options=?, enabled=?, sort_order=?, upstream_inbound_id=?, relay_secret=?, egress_id=?, argo_enabled=?, argo_mode=?, argo_auth=?, argo_domain=?, fallback_hosts=?,
 		upstream_broken=CASE WHEN ?=1 THEN 0 ELSE upstream_broken END, updated_at=? WHERE id=?`,
-		n.ServerID, n.Type, n.Tag, n.Listen, n.ListenPort, n.TlsID, n.Options, b2i(n.Enabled), n.SortOrder, n.UpstreamInboundID, n.RelaySecret, n.EgressID, b2i(n.ArgoEnabled), n.ArgoMode, n.ArgoAuth, n.ArgoDomain, rechained, now, n.ID); err != nil {
+		n.ServerID, n.Type, n.Tag, n.Listen, n.ListenPort, n.TlsID, n.Options, b2i(n.Enabled), n.SortOrder, n.UpstreamInboundID, n.RelaySecret, n.EgressID, b2i(n.ArgoEnabled), n.ArgoMode, n.ArgoAuth, n.ArgoDomain, marshalHosts(n.FallbackHosts), rechained, now, n.ID); err != nil {
 		return n.ID, err
 	}
 	if tagChanged {
@@ -1123,6 +1154,20 @@ func (s *Store) BuildSelfBuiltLinks(u *User, host string) []SelfBuiltLink {
 		}
 		if link := singbox.BuildShareLink(p); link != "" {
 			out = append(out, SelfBuiltLink{NodeID: logicalID, Tag: ib.Tag, Link: link})
+		}
+		// 多 IP 存活兜底：主 host 之外，为每个备选 host 生成同凭据的变体节点，
+		// 只改 dial 地址与 remark 后缀（TLS/WS/凭据一致），并按可达性排主在前的顺序。
+		// 客户端 urltest/手动切换即可在一个 IP 被墙时切到可用备选。
+		if len(ib.FallbackHosts) > 0 && (ib.Type == "vless" || ib.Type == "vmess") {
+			hosts := pickAliveHosts(ib.FallbackHosts, ib.ListenPort)
+			for i, fb := range hosts {
+				v := p
+				v.Host = fb
+				v.Tag = remark + "-ip" + strconv.Itoa(i+1)
+				if link := singbox.BuildShareLink(v); link != "" {
+					out = append(out, SelfBuiltLink{NodeID: logicalID, Tag: ib.Tag, Link: link})
+				}
+			}
 		}
 		// Cloudflare Argo exposure: when the inbound is fronted by a tunnel, also
 		// emit the 13-port CDN set so a blocked landing IP never takes the node

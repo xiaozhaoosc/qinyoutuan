@@ -893,6 +893,9 @@ func (s *Store) Migrate() error {
 		`ALTER TABLE sb_inbounds ADD COLUMN argo_mode TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE sb_inbounds ADD COLUMN argo_auth TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE sb_inbounds ADD COLUMN argo_domain TEXT NOT NULL DEFAULT ''`,
+		// 多 IP 存活兜底：备选出口 IP/域名列表（JSON 数组，如 ["1.2.3.4","5.6.7.8"]）。
+		// 主 host 仍由 node_host_override / Server.Host 决定；为空 = 旧行为（单 host）。
+		`ALTER TABLE sb_inbounds ADD COLUMN fallback_hosts TEXT NOT NULL DEFAULT ''`,
 		// A self-built node is the user-facing logical route. Several nodes may now
 		// share one physical inbound and select different landing inbounds; 0 keeps
 		// the legacy behaviour of inheriting the physical inbound's own chain.
