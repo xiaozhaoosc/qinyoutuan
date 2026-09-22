@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>亲友团 · 安全连接服务</title>
+<style>
+  :root{--bg:#0b1220;--card:rgba(255,255,255,.045);--border:rgba(148,163,184,.16);--text:#e2e8f0;--muted:#94a3b8;--g1:#22d3ee;--g2:#3b6cf0;--g3:#818cf8;}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:"Segoe UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:radial-gradient(circle at 14% -6%,rgba(34,211,238,.14),transparent 30rem),radial-gradient(circle at 88% 4%,rgba(129,140,248,.14),transparent 28rem),linear-gradient(180deg,#0d1626 0,#0a101d 30rem),var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{max-width:760px;width:100%;padding:56px 48px;border-radius:22px;background:var(--card);border:1px solid var(--border);backdrop-filter:blur(14px);position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5);}
+  .card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3));}
+  .mark{width:52px;height:52px;margin-bottom:22px;filter:drop-shadow(0 4px 10px rgba(59,108,240,.4));}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px;}
+  .sub{color:var(--muted);font-size:15px;line-height:1.7;margin-bottom:30px;}
+  .feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+  .f{padding:16px 18px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03);}
+  .f b{display:block;font-size:14px;margin-bottom:5px;background:linear-gradient(90deg,var(--g1),var(--g2));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .f span{font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .meta{margin-top:34px;font-size:12px;color:var(--muted);opacity:.75;}
+  @media(max-width:560px){.card{padding:40px 26px}h1{font-size:24px}}
+</style>
+</head>
+<body>
+  <div class="card">
+    <svg class="mark" viewBox="0 0 64 64" fill="none">
+      <rect x="3" y="3" width="58" height="58" rx="16" fill="#0f1729"/>
+      <path d="M30 32 L17 23 M30 32 L43 23 M30 32 L17 41 M30 32 L43 41" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
+      <circle cx="30" cy="32" r="9" fill="url(#g)"/>
+      <path d="M26 32 a4 4 0 0 1 4-4 M26 32 a4 4 0 0 0 4 4" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none" opacity=".9"/>
+      <circle cx="17" cy="23" r="3" fill="#22d3ee"/><circle cx="43" cy="23" r="3" fill="#818cf8"/>
+      <circle cx="17" cy="41" r="2.4" fill="#3b6cf0"/><circle cx="43" cy="41" r="2.4" fill="#22d3ee"/>
+      <defs><linearGradient id="g" x1="21" y1="23" x2="39" y2="41"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs>
+    </svg>
+    <h1>亲友团 · 安全连接服务</h1>
+    <p class="sub">轻量级私有代理订阅管理面板。自建节点、安全隧道、智能优选，为家庭与团队提供稳定、私密的网络连接服务。</p>
+    <div class="feat">
+      <div class="f"><b>多协议节点</b><span>VLESS / VMess / Reality 等，安全抗封锁</span></div>
+      <div class="f"><b>Cloudflare 隧道</b><span>CDN 优选接入，落地 IP 被墙依旧可用</span></div>
+      <div class="f"><b>智能优选</b><span>多端订阅自适应，自动选最优节点</span></div>
+    </div>
+    <div class="meta">© 2026 亲友团 · Powered by QinYouTuan</div>
+  </div>
+</body>
+</html>
