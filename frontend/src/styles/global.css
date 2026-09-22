@@ -32,6 +32,36 @@
   --ff: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, sans-serif;
 }
 
+/* ---- 深色模式：html.dark 时切换全部语义变量 ---- */
+:root.dark {
+  --bg: #0b1220;
+  --bg-soft: #0f1729;
+  --bg-subtle: #131c30;
+  --card: rgba(21, 30, 49, .9);
+  --card-hover: #182238;
+  --border: rgba(148, 163, 184, .14);
+  --border-strong: rgba(148, 163, 184, .26);
+  --text: #e2e8f0;
+  --text-2: #a4b0c3;
+  --text-3: #7c8aa0;
+  --accent: #5c8cff;
+  --accent-hover: #6f9aff;
+  --accent-strong: #8ea7ff;
+  --accent-soft: #1a2745;
+  --accent-subtle: #182238;
+  --danger: #f2676b;
+  --danger-soft: #2a1c25;
+  --warn: #f0a13c;
+  --info: #5c8cff;
+  --success: #3fbf6e;
+  --success-soft: #162a20;
+  --shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 1px 2px rgba(0,0,0,.3), 0 14px 40px rgba(0,0,0,.34);
+  --shadow-sm: inset 0 1px 0 rgba(255,255,255,.04), 0 1px 1px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.32);
+  --shadow-flyout: inset 0 1px 0 rgba(255,255,255,.05), 0 28px 80px rgba(0,0,0,.55), 0 8px 22px rgba(0,0,0,.4);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  --brand-gradient: linear-gradient(135deg, #22d3ee 0%, #4f7cff 52%, #818cf8 100%);
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow-x: hidden; }
 body {
@@ -51,6 +81,13 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-hover); }
 button, input, textarea, select { font-family: inherit; }
 ::selection { background: #cfe1fb; color: var(--text); }
+:root.dark body {
+  background:
+    radial-gradient(circle at 12% -8%, rgba(34, 211, 238, .08), transparent 32rem),
+    radial-gradient(circle at 88% 0%, rgba(108, 124, 255, .10), transparent 30rem),
+    linear-gradient(180deg, #0d1626 0, #0a101d 26rem);
+}
+:root.dark ::selection { background: rgba(92, 140, 255, .35); }
 
 /* Fluent-inspired Naive UI skin: quiet surfaces, fine borders and compact controls. */
 .n-card {
@@ -304,3 +341,55 @@ button.resource-metric:hover { transform:translateY(-2px); box-shadow:var(--shad
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ================= 深色模式：覆盖仍用硬编码浅色的组件 ================= */
+:root.dark .n-input,
+:root.dark .n-input-number,
+:root.dark .n-base-selection {
+  background: rgba(16, 23, 38, .9) !important;
+}
+:root.dark .n-input:not(.n-input--disabled):hover .n-input__border,
+:root.dark .n-base-selection:not(.n-base-selection--disabled):hover .n-base-selection__border { border-color: #3a4a63 !important; }
+
+:root.dark .n-data-table .n-data-table-td { border-bottom-color: #1d2a42 !important; }
+:root.dark .n-data-table .n-data-table-th,
+:root.dark .n-data-table .n-data-table-th__cell { color: var(--text-2) !important; }
+:root.dark .n-data-table .n-data-table-tr:hover .n-data-table-td { background: rgba(92, 140, 255, .06) !important; }
+
+:root.dark .n-radio-group { background: #111a2d; }
+
+:root.dark .n-tag { color: var(--text-2) !important; }
+
+:root.dark .n-empty .n-empty__icon { opacity: .7; }
+
+:root.dark .sticky-actions {
+  background: rgba(16, 24, 41, .92);
+}
+
+:root.dark .md pre.md-pre { background: #0a0f1c; border: 1px solid var(--border); }
+:root.dark .md blockquote { color: var(--text-2); }
+:root.dark .md code.md-code { background: rgba(148, 163, 184, .1); }
+
+:root.dark .app-header {
+  background: rgba(11, 18, 32, .72);
+  border-bottom-color: rgba(148, 163, 184, .08);
+}
+
+:root.dark .resource-metric,
+:root.dark .stat-card,
+:root.dark .list-card,
+:root.dark .surface-inset { background: var(--card); }
+
+:root.dark .surface-inset { border-color: var(--border); }
+
+/* 简化深色模式下的滚动条 */
+:root.dark * { scrollbar-color: #3a4a63 transparent; }
+:root.dark *::-webkit-scrollbar-thumb { background: #3a4a63; }
+:root.dark *::-webkit-scrollbar-thumb:hover { background: #4d5f7e; }
+
+/* 让自绘 SVG 表格/图表随深色切换文字色（图表通常用 currentColor） */
+:root.dark .n-collapse-item__header,
+:root.dark .n-collapse-item__content { color: var(--text); }
+
+/* 订单/发票等用 n-descriptions 的也可随主题 */
+:root.dark .n-descriptions .n-descriptions-table-header th { color: var(--text-3); }

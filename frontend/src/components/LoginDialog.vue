@@ -167,13 +167,21 @@ watch(() => props.show, (v) => {
 <style scoped>
 :global(.login-modal) {
   overflow: hidden;
-  background: rgba(255,255,255,.93) !important;
+  background: var(--card) !important;
   backdrop-filter: blur(24px) saturate(1.12);
   animation: loginIn .5s var(--ease-emphasized) both;
 }
+/* 科技简洁风：卡片顶部一条品牌渐变光带 */
 :global(.login-modal::before) {
-  content: ''; position: absolute; inset: 0 0 auto; height: 96px; pointer-events: none;
-  background: radial-gradient(circle at 18% 0, rgba(71,155,207,.11), transparent 70%);
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; pointer-events: none;
+  background: var(--brand-gradient);
+  z-index: 1;
+}
+:global(.login-modal::after) {
+  content: ''; position: absolute; inset: 0 0 auto; height: 130px; pointer-events: none;
+  background:
+    radial-gradient(circle at 82% 0, rgba(99,102,241,.16), transparent 62%),
+    radial-gradient(circle at 14% 0, rgba(34,211,238,.14), transparent 65%);
 }
 @keyframes loginIn { from { opacity: 0; transform: translateY(10px) scale(.975); filter: blur(3px); } }
 .login-brand { position: relative; text-align: center; margin-bottom: 18px; }
