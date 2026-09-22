@@ -420,4 +420,10 @@ onUnmounted(() => {
 .pill-warn { background: rgba(191,149,64,.15); color: var(--warn); }
 
 @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* —— 深色模式：残留的浅色边框与浅色类型图标块随主题切换（状态色绿/红保留）—— */
+:global(.dark) .order-item:hover { border-color: var(--border-strong); }
+:global(.dark) .oi-ic.plan { background: rgba(111,143,118,.16); color: #9fc0ac; }
+:global(.dark) .oi-ic.traffic { background: rgba(94,122,153,.18); color: #9db5cf; }
+:global(.dark) .oi-ic.other { background: rgba(148,163,184,.12); color: var(--text-2); }
 </style>

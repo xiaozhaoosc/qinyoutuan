@@ -735,4 +735,19 @@ onUnmounted(() => {
   .heat-legend { display: none; }
 }
 @media (max-width: 380px) { .summary-grid { grid-template-columns: 1fr 1fr; } .summary-icon { width: 38px; height: 38px; } .summary-val { font-size: 20px; } }
+
+/* ===== 深色模式覆盖：残留的浅色/白底与深字随主题切换 ===== */
+:global(.dark) .clock { background: rgba(16, 24, 41, .72); }
+:global(.dark) .refresh-btn { background: rgba(16, 24, 41, .72); }
+:global(.dark) .refresh-btn:hover:not(:disabled) { background: #182238; }
+:global(.dark) .summary-icon.i-server { background: linear-gradient(145deg, #16243a, #132034); color: #6aa7d0; }
+:global(.dark) .summary-icon.i-cpu { background: linear-gradient(145deg, #15263b, #121f34); color: #6ab0e2; }
+:global(.dark) .summary-icon.i-mem { background: linear-gradient(145deg, #1a2240, #161e39); color: #8ba4d8; }
+:global(.dark) .summary-icon.i-disk { background: linear-gradient(145deg, #161f2e, #131c2a); color: #7fb3c6; }
+:global(.dark) .summary-icon.i-up { background: linear-gradient(145deg, #152c29, #122724); color: #5fbfae; }
+:global(.dark) .summary-icon.i-down { background: linear-gradient(145deg, #14273a, #11222f); color: #6aa7cf; }
+:global(.dark) .heat-range { background: #111a2d; border-color: rgba(148, 163, 184, .14); }
+:global(.dark) .heat-range-btn.active { background: #182238; }
+:global(.dark) .tag.price { background: #2a2416; color: #d4b36a; }
+:global(.dark) .tag.expiry.warn { background: #2a2416; color: #e0c06b; }
 </style>

@@ -459,4 +459,10 @@ onUnmounted(() => { if (pollTimer) window.clearTimeout(pollTimer) })
 .cl-title { font-weight: 700; }
 .cl-date { font-size: 12px; color: var(--text-3); }
 .cl-body { padding: 8px 18px 18px; }
+
+/* 深色模式：本页白色卡片块随主题切换 */
+:global(.dark) .ver-card,
+:global(.dark) .rb-box,
+:global(.dark) .rel-box,
+:global(.dark) .changelog { background: var(--card); }
 </style>

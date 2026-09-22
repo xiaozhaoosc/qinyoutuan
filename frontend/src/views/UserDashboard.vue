@@ -367,4 +367,7 @@ a{color:var(--accent-strong)}
 @media (prefers-reduced-motion: reduce){
   .ring-arc,.mini-fill{transition:none}
 }
+
+/* —— 深色模式：残留的浅色数字徽标随主题切换（环形/点等状态色保留）—— */
+:global(.dark) .onboarding-strip button i { background: var(--bg-subtle); color: var(--text-2); }
 </style>

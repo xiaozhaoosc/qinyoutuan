@@ -884,4 +884,17 @@ onUnmounted(() => {
   .asset-form-hint { margin-left: 0; }
 }
 @media (min-width: 769px) and (max-width: 1180px) { .sum-grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* ===== 深色模式覆盖：残留的浅色块与深字随主题切换 =====
+   汇总卡片图标用的是内联 style，优先级别高，需 !important 覆盖。 */
+:global(.dark) .sum-card:nth-child(1) .sum-ic { background: #1a2a23 !important; color: #7db795 !important; }
+:global(.dark) .sum-card:nth-child(2) .sum-ic { background: #0f2b1f !important; color: #3ddb8b !important; }
+:global(.dark) .sum-card:nth-child(2) .sum-val { color: var(--success) !important; }
+:global(.dark) .sum-card:nth-child(3) .sum-ic { background: #2b1a1a !important; color: #f67d7d !important; }
+:global(.dark) .sum-card:nth-child(3) .sum-val { color: var(--danger) !important; }
+:global(.dark) .sum-card:nth-child(4) .sum-ic { background: #1a2432 !important; color: #8fb0d0 !important; }
+:global(.dark) .sum-card:nth-child(5) .sum-ic { background: #2b2315 !important; color: #d9b25f !important; }
+:global(.dark) .sum-card:nth-child(6) .sum-ic { background: #2b2215 !important; color: #eda860 !important; }
+:global(.dark) .range-switch { background: #111a2d; border-color: rgba(148, 163, 184, .14); }
+:global(.dark) .range-switch button.active { background: #182238; }
 </style>

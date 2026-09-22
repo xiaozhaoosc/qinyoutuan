@@ -1025,6 +1025,12 @@ onMounted(load)
 .chip.fin { background: #7676761a; color: var(--text-3); }
 .chip.none { background: transparent; color: var(--text-3); font-weight: 500; padding-left: 0; }
 
+/* 深色模式：hover 亮灰边框与状态小片文字随主题切换（保留绿/蓝状态色，仅提亮文字） */
+:global(.dark) .ss-item:hover { border-color: var(--border-strong); }
+:global(.dark) .user-card:hover { border-color: var(--border-strong); }
+:global(.dark) .chip.ok { color: #43b27a; }
+:global(.dark) .chip.q { color: #8cabcf; }
+
 /* 套餐面板 */
 .pm-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
 .pm-stat { background: var(--bg-soft); border-radius: var(--r-sm); padding: 10px 12px; min-width: 0; }

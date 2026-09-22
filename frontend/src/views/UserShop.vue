@@ -343,4 +343,14 @@ onMounted(async () => {
 .sc-stock.hot { color: var(--warn); }
 .sc-queue-note { font-size: 11px; color: #4b7a5c; background: #edf4ef; border: 1px solid #d9e8df; border-radius: 8px; padding: 5px 8px; margin-bottom: 10px; line-height: 1.4; }
 .sc-buy { margin-top: 12px; }
+
+/* —— 深色模式：残留的浅色卡片边框 / 类型标签 / 时长档位 / 排队提示随主题切换 —— */
+:global(.dark) .shop-card:hover { border-color: var(--border-strong); }
+:global(.dark) .t-traffic { background: rgba(92,140,255,.15); border-color: rgba(92,140,255,.30); }
+:global(.dark) .t-plan { color: #92c3a3; background: rgba(75,122,92,.16); border-color: rgba(75,122,92,.30); }
+:global(.dark) .t-other { background: rgba(217,119,6,.16); border-color: rgba(217,119,6,.30); }
+:global(.dark) .sc-dur:hover { border-color: var(--border-strong); }
+:global(.dark) .sc-dur.on { background: rgba(111,143,118,.14); }
+:global(.dark) .sc-highlights li::before { color: #92c3a3; }
+:global(.dark) .sc-queue-note { color: #92c3a3; background: rgba(75,122,92,.16); border: 1px solid rgba(75,122,92,.30); }
 </style>

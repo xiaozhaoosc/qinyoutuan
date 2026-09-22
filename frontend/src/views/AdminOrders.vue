@@ -252,6 +252,11 @@ onMounted(load)
 .pill-ok { background: rgba(16,185,129,.12); color: #0f9d6f; }
 .pill-warn { background: rgba(191,149,64,.15); color: var(--warn); }
 
+/* 深色模式：分段控件 / 状态胶囊随主题切换 */
+:global(.dark) .seg { background: #111a2d; border-color: var(--border); }
+:global(.dark) .seg-btn.active { background: var(--card); }
+:global(.dark) .pill-ok { color: #43c083; }
+
 /* 桌面表格 */
 .orders-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-sm); overflow-x: auto; }
 .orders-table { width: 100%; border-collapse: collapse; font-size: 13px; }

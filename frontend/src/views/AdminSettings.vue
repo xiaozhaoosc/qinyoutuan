@@ -1338,6 +1338,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnl
   font-size: 12.5px; color: var(--text-2); line-height: 1.7;
 }
 .warn-box ul { margin: 6px 0 0; padding-left: 20px; }
+:global(.dark) .warn-box { background: #2b2415; }
 .page-sub { color: var(--text-2); margin-bottom: 22px; }
 .cf-guide { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
 .cf-guide-t { color:var(--text); font-size:12.5px; font-weight:650; cursor:pointer; }

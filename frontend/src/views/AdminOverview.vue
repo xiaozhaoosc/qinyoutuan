@@ -701,4 +701,14 @@ onUnmounted(() => {
 @media (max-width: 900px) {
   .two-col { grid-template-columns: 1fr; }
 }
+
+/* ===== 深色模式覆盖：残留的浅色块与深字随主题切换 ===== */
+:global(.dark) .kpi:hover { border-color: var(--border-strong); }
+:global(.dark) .kpi-delta.good { color: #7fd6a0; background: #162a20; }
+:global(.dark) .kpi-delta.bad { color: #f09290; background: #2a1c25; }
+:global(.dark) .dot.off { background: #4d5f7e; }
+:global(.dark) .dist-item:hover { border-color: var(--border-strong); background: var(--card-hover); }
+:global(.dark) .mini-bar { background: rgba(148, 163, 184, .18); }
+:global(.dark) .tbl td.warn, :global(.dark) .tbl .warn { color: #e0b06a; }
+:global(.dark) .tbl td.bad, :global(.dark) .tbl .bad { color: #f08a84; }
 </style>

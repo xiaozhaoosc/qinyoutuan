@@ -373,4 +373,9 @@ onUnmounted(() => {
 .tx-bal { font-size: 11.5px; color: var(--text-3); margin-top: 3px; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* —— 深色模式：残留的浅色卡片边框与收/支图标块随主题切换（状态色绿/红保留）—— */
+:global(.dark) .tx-card:hover { border-color: var(--border-strong); }
+:global(.dark) .tx-ic.up { background: rgba(111,143,118,.16); color: #9fc0ac; }
+:global(.dark) .tx-ic.down { background: rgba(200,104,92,.16); color: #d9a09a; }
 </style>

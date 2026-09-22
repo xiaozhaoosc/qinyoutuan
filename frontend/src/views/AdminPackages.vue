@@ -323,7 +323,7 @@ onMounted(load)
 .opt-chip {
   font-size: 11px;
   color: var(--text-2);
-  background: var(--bg-2, #f6f6f6);
+  background: var(--bg-soft);
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 2px 8px;

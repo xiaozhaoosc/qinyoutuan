@@ -1816,7 +1816,7 @@ async function load() {
 .sb-overview button > span:last-child { display:flex; min-width:0; flex-direction:column; }
 .sb-overview b { color:var(--text); font-size:18px; line-height:1.15; letter-spacing:-.02em; }
 .sb-overview small { overflow:hidden; margin-top:3px; color:var(--text-3); font-size:10.5px; white-space:nowrap; text-overflow:ellipsis; }
-.sb-icon { display:grid; place-items:center; flex:none; width:32px; height:32px; border-radius:10px; background:#e8eef3; color:#52606c; font-size:10px; font-weight:700; }
+.sb-icon { display:grid; place-items:center; flex:none; width:32px; height:32px; border-radius:10px; background:var(--bg-soft); color:var(--text-2); font-size:10px; font-weight:700; }
 .sb-icon.mint,.sb-icon.ok { background:#e5f3ed; color:#39715a; }
 .sb-icon.amber { background:#f8efdc; color:#89651f; }
 .sb-icon.violet { background:#eeeaf5; color:#685484; }
