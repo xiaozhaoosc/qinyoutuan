@@ -18,6 +18,6 @@ withDefaults(defineProps<{ size?: number }>(), { size: 36 })
   display: block;
   flex-shrink: 0;
   object-fit: contain;
-  filter: drop-shadow(0 4px 7px rgba(24, 76, 108, .14));
+  filter: drop-shadow(0 4px 8px rgba(59, 108, 240, .35));
 }
 </style>
