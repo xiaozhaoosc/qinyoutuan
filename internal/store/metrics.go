@@ -231,26 +231,91 @@ func (s *Store) GetLatestMetricsForAll() (map[int64]*ServerMetrics, error) {
 	return out, rows.Err()
 }
 
-// ListMetrics returns metrics for a server since the given Unix timestamp. The
-// row count is capped (most-recent-first within the window, returned in
-// chronological order) so a long range on a high-frequency probe can't serialize
-// hundreds of thousands of rows into a single response.
+// ListMetrics returns metrics for a server since the given Unix timestamp, in
+// chronological order. The response is time-boxed rather than count-capped the
+// way an unbounded window would otherwise be serialized: when the window holds
+// more rows than maxMetricsRows, the samples are downsampled by bucketing the
+// window and keeping one aggregate per bucket, so a long range (7d/30d) draws
+// the whole span instead of silently showing only the most recent ~1.7 days
+// that a plain LIMIT would crop to.
 func (s *Store) ListMetrics(serverID int64, since int64) ([]*ServerMetrics, error) {
 	const maxMetricsRows = 5000
-	rows, err := s.db.Query(`SELECT `+metricsCols+` FROM (
-		SELECT `+metricsCols+` FROM server_metrics WHERE server_id=? AND ts>=? ORDER BY ts DESC LIMIT ?
-	) ORDER BY ts`, serverID, since, maxMetricsRows)
+	var cnt int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM server_metrics WHERE server_id=? AND ts>=?`,
+		serverID, since).Scan(&cnt); err != nil {
+		return nil, err
+	}
+	if cnt <= maxMetricsRows {
+		// 高频段（1h/6h/24h 内样本不多）：精确返回每一行，时序不失真。
+		rows, err := s.db.Query(`SELECT `+metricsCols+` FROM (
+			SELECT `+metricsCols+` FROM server_metrics WHERE server_id=? AND ts>=? ORDER BY ts DESC LIMIT ?
+		) ORDER BY ts`, serverID, since, maxMetricsRows)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var out []*ServerMetrics
+		for rows.Next() {
+			m, err := scanMetrics(rows)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, m)
+		}
+		return out, rows.Err()
+	}
+
+	// 长窗口下采样：按实际数据跨度把窗口切成 bucketSec 宽的桶，每桶取一个代表点。
+	// CPU/内存/网络速率/负载都是瞬时量，AVG 恰当；uptime 取 MAX（单调递增），
+	// 其余字符串取 MAX 仅是兜底，不参与图表数值。
+	var minTs, maxTs int64
+	if err := s.db.QueryRow(`SELECT MIN(ts), MAX(ts) FROM server_metrics WHERE server_id=? AND ts>=?`,
+		serverID, since).Scan(&minTs, &maxTs); err != nil {
+		return nil, err
+	}
+	span := maxTs - minTs
+	bucketSec := int64(1)
+	if span > 0 {
+		// ceil(span / 目标桶数)，保证桶数不会超过返回上限。
+		bucketSec = (span + int64(maxMetricsRows) - 1) / int64(maxMetricsRows)
+		if bucketSec < 1 {
+			bucketSec = 1
+		}
+	}
+	rows, err := s.db.Query(`SELECT
+		MAX(ts) AS ts,
+		MAX(probe_version), AVG(cpu_percent),
+		CAST(AVG(mem_used) AS INTEGER), CAST(AVG(mem_total) AS INTEGER),
+		CAST(AVG(swap_used) AS INTEGER), CAST(AVG(swap_total) AS INTEGER),
+		CAST(AVG(disk_used) AS INTEGER), CAST(AVG(disk_total) AS INTEGER),
+		AVG(net_rx), AVG(net_tx),
+		CAST(AVG(net_rx_total) AS INTEGER), CAST(AVG(net_tx_total) AS INTEGER),
+		MAX(net_totals_valid),
+		CAST(AVG(net_rx_bytes) AS INTEGER), CAST(AVG(net_tx_bytes) AS INTEGER),
+		AVG(load1), AVG(load5), AVG(load15),
+		CAST(AVG(tcp_connections) AS INTEGER), CAST(AVG(process_count) AS INTEGER),
+		MAX(uptime), MAX(hostname), MAX(platform), MAX(kernel), MAX(arch)
+		FROM server_metrics
+		WHERE server_id=? AND ts>=?
+		GROUP BY CAST(ts AS INTEGER) / ? 
+		ORDER BY MAX(ts)`, serverID, since, bucketSec)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	var out []*ServerMetrics
 	for rows.Next() {
-		m, err := scanMetrics(rows)
-		if err != nil {
+		var m ServerMetrics
+		if err := rows.Scan(&m.Ts, &m.ProbeVersion, &m.CPUPercent,
+			&m.MemUsed, &m.MemTotal, &m.SwapUsed, &m.SwapTotal,
+			&m.DiskUsed, &m.DiskTotal, &m.NetRx, &m.NetTx,
+			&m.NetRxTotal, &m.NetTxTotal, &m.NetTotalsValid,
+			&m.NetRxBytes, &m.NetTxBytes, &m.Load1, &m.Load5, &m.Load15,
+			&m.TCPConnections, &m.ProcessCount, &m.Uptime,
+			&m.Hostname, &m.Platform, &m.Kernel, &m.Arch); err != nil {
 			return nil, err
 		}
-		out = append(out, m)
+		out = append(out, &m)
 	}
 	return out, rows.Err()
 }

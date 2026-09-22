@@ -97,3 +97,63 @@ func TestTrafficUsageIgnoresLegacyRateOnlyRows(t *testing.T) {
 		t.Fatalf("legacy row without cumulative counters must not look like measured usage: %+v", usage[1])
 	}
 }
+
+// TestListMetricsDownsamplesLongWindow verifies the 7d/30d chart fix: when a range
+// holds more rows than the 5000-row cap, ListMetrics must still cover the whole
+// span (bucketed aggregate per window slice) instead of silently cropping to the
+// most recent 5000 rows.
+func TestListMetricsDownsamplesLongWindow(t *testing.T) {
+	st := newRefundStore(t)
+
+	// Exceed the cap: 6000 rows at 1s apart (~100 minutes of a fast probe).
+	const n = 6000
+	base := int64(1_000_000)
+	for i := 0; i < n; i++ {
+		// Increase CPU a little each sample so the tail is distinguishable from
+		// the head; the exact value doesn't matter, only that sampling covers both.
+		if err := st.InsertMetrics(1, ServerMetrics{Ts: base + int64(i), CPUPercent: float64(i % 100)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	rows, err := st.ListMetrics(1, base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Downsampled: fewer than the raw 6000, and fewer than/equal the cap.
+	if len(rows) == 0 || len(rows) > 5000 {
+		t.Fatalf("downsample returned %d rows, want (0, 5000]", len(rows))
+	}
+	// Coverage must reach the newest sample. The last bucket's ts is MAX(ts) of its
+	// bucket, so it equals the newest inserted ts.
+	if rows[len(rows)-1].Ts != base+n-1 {
+		t.Fatalf("last row ts = %d, want %d (sampling must not crop the tail)",
+			rows[len(rows)-1].Ts, base+n-1)
+	}
+	// And it must cover the oldest sample's vicinity (first bucket MIN ts offset).
+	if rows[0].Ts < base {
+		t.Fatalf("first row ts = %d, want >= %d (sampling dropped the head)", rows[0].Ts, base)
+	}
+}
+
+// TestListMetricsExactUnderCap keeps passing exact rows when the window is small.
+func TestListMetricsExactUnderCap(t *testing.T) {
+	st := newRefundStore(t)
+	for i, ts := range []int64{100, 200, 300} {
+		if err := st.InsertMetrics(7, ServerMetrics{Ts: ts, CPUPercent: float64(i)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rows, err := st.ListMetrics(7, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 3 {
+		t.Fatalf("got %d rows, want 3 (exact under cap)", len(rows))
+	}
+	for i, ts := range []int64{100, 200, 300} {
+		if rows[i].Ts != ts {
+			t.Fatalf("row %d ts = %d, want %d", i, rows[i].Ts, ts)
+		}
+	}
+}
