@@ -163,21 +163,21 @@ bash /opt/qinyoutuan/install.sh uninstall
 面板是中心机、SSH 管远程落地，容器不需要跑 sing-box；镜像内置两架构探针，支持 amd64/arm64。
 
 ```bash
-git clone https://github.com/mllt992/qing-zhou.git && cd qing-zhou
+git clone https://github.com/xiaozhaoosc/qinyoutuan.git && cd qinyoutuan
 # 改 docker-compose.yml 里的 QZ_PUBLIC_BASE 与 QZ_SECRET_KEY(openssl rand -hex 32)
 docker compose up -d
 docker compose logs -f qinyoutuan     # 首启打印随机管理员密码（未设 QZ_ADMIN_PASS 时）
 ```
 
-或直接用镜像：`docker run -d -p 8081:8086 -e QZ_SECRET_KEY=$(openssl rand -hex 32) -v qinyoutuan-data:/data ghcr.io/mllt992/qing-zhou:latest`。**Docker 用「拉新镜像 + 重建容器」升级**，详见 [Wiki · Docker 部署](https://github.com/mllt992/qing-zhou/wiki/Docker-部署)。
+或直接用镜像：`docker run -d -p 8081:8086 -e QZ_SECRET_KEY=$(openssl rand -hex 32) -v qinyoutuan-data:/data ghcr.io/xiaozhaoosc/qinyoutuan:latest`。**Docker 用「拉新镜像 + 重建容器」升级**，详见 [Wiki · Docker 部署](https://github.com/mllt992/qing-zhou/wiki/Docker-部署)。
 
 通过当前发布工作流新构建的 GHCR 镜像会携带构建来源证明（provenance）与 SBOM，并标记
 对应的源码 revision。可用 Buildx 查看镜像清单和证明；把示例版本换成实际安装的 tag：
 
 ```bash
-docker buildx imagetools inspect ghcr.io/mllt992/qing-zhou:vX.Y.Z
-docker buildx imagetools inspect ghcr.io/mllt992/qing-zhou:vX.Y.Z --format '{{json .Provenance}}'
-docker buildx imagetools inspect ghcr.io/mllt992/qing-zhou:vX.Y.Z --format '{{json .SBOM}}'
+docker buildx imagetools inspect ghcr.io/xiaozhaoosc/qinyoutuan:vX.Y.Z
+docker buildx imagetools inspect ghcr.io/xiaozhaoosc/qinyoutuan:vX.Y.Z --format '{{json .Provenance}}'
+docker buildx imagetools inspect ghcr.io/xiaozhaoosc/qinyoutuan:vX.Y.Z --format '{{json .SBOM}}'
 ```
 
 ### 二、本地开发运行

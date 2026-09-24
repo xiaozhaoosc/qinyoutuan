@@ -10,7 +10,7 @@
 services:
   qinyoutuan:
     # 用官方预构建镜像（多架构）。想自己构建就注释掉 image、放开 build。
-    image: ghcr.io/mllt992/qing-zhou:latest
+    image: ghcr.io/xiaozhaoosc/qinyoutuan:latest
     # build: .
     container_name: qinyoutuan
     restart: unless-stopped
