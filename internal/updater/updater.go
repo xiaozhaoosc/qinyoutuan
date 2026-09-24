@@ -32,7 +32,7 @@ import (
 )
 
 // DefaultRepo is the GitHub "owner/name" polled when no override is configured.
-const DefaultRepo = "mllt992/qing-zhou"
+const DefaultRepo = "xiaozhaoosc/qinyoutuan"
 
 // assetName is the release asset this binary knows how to install for the
 // current OS/arch, e.g. "qinyoutuan-linux-amd64".

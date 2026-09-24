@@ -139,7 +139,7 @@
 自动识别架构（amd64/arm64）、下载 GitHub 最新 release、SHA-256 校验、交互式引导配置（监听地址 / 访问地址 / 管理员账号，密钥自动生成）、装好 systemd 并启动；**已安装则原地升级**（配置与数据库不动，二进制原子替换）：
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/mllt992/qing-zhou/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/xiaozhaoosc/qinyoutuan/main/install.sh)
 ```
 
 常用选项：`--version vX.Y.Z` 装指定版本；`--force` 同版本强制重装；`--proxy https://mirror.ghproxy.com/` 国内下载加速。装完后升级可重跑脚本，或直接用面板内「在线更新」。
@@ -156,7 +156,7 @@ sed -i 's|^QZ_LISTEN=.*|QZ_LISTEN=0.0.0.0:8086|' /opt/qinyoutuan/qinyoutuan.env 
 bash /opt/qinyoutuan/install.sh uninstall
 ```
 
-先停服务、删 systemd 与二进制，再单独确认是否连数据库和配置一起删（输 `yes` 才删 `/opt/qinyoutuan`）。老版本装的没有这份副本，直接 `bash <(curl -fsSL https://raw.githubusercontent.com/mllt992/qing-zhou/main/install.sh) uninstall`。
+先停服务、删 systemd 与二进制，再单独确认是否连数据库和配置一起删（输 `yes` 才删 `/opt/qinyoutuan`）。老版本装的没有这份副本，直接 `bash <(curl -fsSL https://raw.githubusercontent.com/xiaozhaoosc/qinyoutuan/main/install.sh) uninstall`。
 
 ### 一、Docker 一键部署（最省事）
 
@@ -288,7 +288,7 @@ systemctl daemon-reload && systemctl enable --now qinyoutuan
 | `QZ_ADMIN_USER` | `mllt992` | 初始管理员用户名（仅首次 seed 生效）。**一键脚本安装时会问，默认写入 `admin`** |
 | `QZ_ADMIN_PASS` | 随机生成 | 初始管理员密码；留空则随机生成并打印到日志 |
 | `QZ_SECRET_KEY` | 回退 jwt_secret | **加密库内敏感配置的主密钥**，建议 `openssl rand -hex 32`，置环境变量不入库。**一旦使用勿再更换**，否则已加密内容无法解密 |
-| `QZ_UPDATE_REPO` | `mllt992/qing-zhou` | 「在线更新」检查的 GitHub 仓库；fork 后想发自己的版本就改成你的仓库 |
+| `QZ_UPDATE_REPO` | `xiaozhaoosc/qinyoutuan` | 「在线更新」检查的 GitHub 仓库；改自己的仓库可指向别的 fork |
 | `QZ_UPDATE_GITHUB_TOKEN` | 空 | 仅用于提升 GitHub API 匿名速率上限（60/时），公开仓库无需任何权限 |
 | `QZ_SINGBOX_BIN` | 自动探测 | sing-box 可执行路径。顺序：本变量 → 常见安装路径 → `PATH` |
 | `QZ_SINGBOX_CONFIG` | `/etc/sing-box/config.json` | 面板下发的配置路径 |

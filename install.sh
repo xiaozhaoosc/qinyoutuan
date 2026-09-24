@@ -2,7 +2,7 @@
 # 亲友团面板一键安装 / 更新脚本
 #
 # 全新安装（交互式配置）与升级（保留配置、原子替换二进制）共用同一入口：
-#   bash <(curl -fsSL https://raw.githubusercontent.com/mllt992/qing-zhou/main/install.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/xiaozhaoosc/qinyoutuan/main/install.sh)
 #
 # 可选参数：
 #   --version vX.Y.Z   安装指定版本（默认取 GitHub 最新 release）
@@ -16,7 +16,7 @@
 #   QZ_LISTEN / QZ_PUBLIC_BASE / QZ_ADMIN_USER / QZ_ADMIN_PASS
 set -euo pipefail
 
-REPO="${QZ_REPO:-mllt992/qing-zhou}"
+REPO="${QZ_REPO:-xiaozhaoosc/qinyoutuan}"
 INSTALL_DIR="/opt/qinyoutuan"
 BIN_PATH="$INSTALL_DIR/qinyoutuan"
 ENV_FILE="$INSTALL_DIR/qinyoutuan.env"

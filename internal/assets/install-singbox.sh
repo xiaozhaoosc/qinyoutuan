@@ -84,7 +84,7 @@ SYSCTL
 # 官方 release 不含这个插件（上游文档：V2Ray API is not included by default），
 # 而面板正是靠它读取每个用户的流量：装官方版的节点，流量永远统计不到、配额
 # 也永远不会生效，且界面上看不出异常（流量恒为 0）。
-QZ_REPO=${QZ_REPO:-mllt992/qing-zhou}
+QZ_REPO=${QZ_REPO:-xiaozhaoosc/qinyoutuan}
 
 install_singbox() {
   local arch url tmp
