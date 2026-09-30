@@ -89,7 +89,7 @@ import {
   PersonOutline, PeopleOutline, PeopleCircleOutline, ArchiveOutline, ServerOutline,
   SettingsOutline, KeyOutline, NotificationsOutline, DocumentTextOutline,
   PulseOutline, HardwareChipOutline, HomeOutline, LogOutOutline, CloudDownloadOutline,
-  ShieldCheckmarkOutline, SearchOutline, DevicesOutline
+  ShieldCheckmarkOutline, SearchOutline, DesktopOutline
 } from '@vicons/ionicons5'
 import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
@@ -147,7 +147,7 @@ const adminOpsItems: MenuOption[] = [
   { label: '订单管理', key: '/admin/orders', icon: renderIcon(ReceiptOutline) },
   { label: '注册码', key: '/admin/reg-codes', icon: renderIcon(KeyOutline) },
   { label: 'API Token', key: '/admin/api-tokens', icon: renderIcon(KeyOutline) },
-  { label: '登录设备', key: '/admin/sessions', icon: renderIcon(DevicesOutline) },
+  { label: '登录设备', key: '/admin/sessions', icon: renderIcon(DesktopOutline) },
 ]
 const adminNodeItems: MenuOption[] = [
   { label: '节点管理', key: '/admin/nodes', icon: renderIcon(ServerOutline) },
