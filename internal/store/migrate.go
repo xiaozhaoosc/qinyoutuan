@@ -484,6 +484,21 @@ CREATE TABLE IF NOT EXISTS server_user_traffic_samples (
   down      INTEGER NOT NULL DEFAULT 0
 );
 
+-- Cumulative per-account, per-PROTOCOL traffic (e.g. vless / hysteria2). The
+-- realtime samples above keep only user (no inbound/protocol) granularity; this
+-- table accumulates how much of a user's traffic came through each protocol, fed
+-- from sing-box's per-inbound stats (inbound>>>tag>>>user>>>...) in a best-effort
+-- pass separate from billing. up/down accumulate; server_id 0 = panel machine.
+CREATE TABLE IF NOT EXISTS user_protocol_usage (
+  user_id    INTEGER NOT NULL,
+  protocol   TEXT    NOT NULL,
+  server_id  INTEGER NOT NULL DEFAULT 0,
+  up         INTEGER NOT NULL DEFAULT 0,
+  down       INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, protocol, server_id)
+);
+
 -- Per-day, per-bucket traffic rollup. Exists because traffic_samples answers
 -- neither question the usage report asks: it carries no bucket, so "which
 -- package did this traffic belong to" is unanswerable, and it is pruned to 35

@@ -19,6 +19,8 @@ type fleetStore struct {
 
 func (s fleetStore) ListServers() ([]*store.Server, error)     { return s.servers, nil }
 func (s fleetStore) GetServer(id int64) (*store.Server, error) { return s.servers[id-1], nil }
+func (s fleetStore) AddProtocolUsage(map[string]map[string]store.UsageDelta) error { return nil }
+func (s fleetStore) GetSbInboundByTag(tag string) (*store.SbInbound, error)        { return nil, nil }
 
 type boundedRemote struct {
 	active, peak, applies, tunnels, probes atomic.Int32

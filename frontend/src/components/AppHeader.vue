@@ -77,6 +77,7 @@ const adminMenu = [
   { label: '服务器', key: '/admin/servers' },
   { label: '监控', key: '/admin/monitor' },
   { label: '订单', key: '/admin/orders' },
+  { label: '登录设备', key: '/admin/sessions' },
   { label: '系统设置', key: '/admin/settings' },
 ]
 

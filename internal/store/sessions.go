@@ -12,6 +12,19 @@ type Session struct {
 	Current   bool   `json:"current"`
 }
 
+// AdminSession is a login session shown to admins, joined with the owning user.
+type AdminSession struct {
+	ID        int64  `json:"id"`
+	UserID    int64  `json:"user_id"`
+	Username  string `json:"username"`
+	IP        string `json:"ip"`
+	UserAgent string `json:"user_agent"`
+	CreatedAt int64  `json:"created_at"`
+	LastSeen  int64  `json:"last_seen"`
+	// Online is computed by the caller (token not expired), not stored.
+	Online bool `json:"online"`
+}
+
 func (s *Store) CreateSession(userID int64, jti, ip, ua string) error {
 	now := time.Now().Unix()
 	// Collapse repeated logins from the same device (same IP + user-agent) into a
@@ -100,6 +113,34 @@ func (s *Store) ListActiveSessions(userID, minCreatedAt int64, currentJti string
 
 func (s *Store) DeleteSessionByJti(jti string) error {
 	_, err := s.db.Exec(`DELETE FROM sessions WHERE jti=?`, jti)
+	return err
+}
+
+// ListAllSessions returns every login session across all users, joined with the
+// owning username, ordered by most recent activity first. Used by the admin
+// global device list. Online state is left to the caller (token-TTL based).
+func (s *Store) ListAllSessions() ([]AdminSession, error) {
+	rows, err := s.db.Query(`SELECT s.id, s.user_id, u.username, s.ip, s.user_agent, s.created_at, s.last_seen
+		FROM sessions s JOIN users u ON u.id = s.user_id
+		ORDER BY s.last_seen DESC, s.id DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []AdminSession
+	for rows.Next() {
+		var a AdminSession
+		if err := rows.Scan(&a.ID, &a.UserID, &a.Username, &a.IP, &a.UserAgent, &a.CreatedAt, &a.LastSeen); err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
+// DeleteSessionByID removes a session by id regardless of owner (admin action).
+func (s *Store) DeleteSessionByID(id int64) error {
+	_, err := s.db.Exec(`DELETE FROM sessions WHERE id=?`, id)
 	return err
 }
 

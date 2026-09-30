@@ -89,7 +89,7 @@ import {
   PersonOutline, PeopleOutline, PeopleCircleOutline, ArchiveOutline, ServerOutline,
   SettingsOutline, KeyOutline, NotificationsOutline, DocumentTextOutline,
   PulseOutline, HardwareChipOutline, HomeOutline, LogOutOutline, CloudDownloadOutline,
-  ShieldCheckmarkOutline, SearchOutline
+  ShieldCheckmarkOutline, SearchOutline, DevicesOutline
 } from '@vicons/ionicons5'
 import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
@@ -147,6 +147,7 @@ const adminOpsItems: MenuOption[] = [
   { label: '订单管理', key: '/admin/orders', icon: renderIcon(ReceiptOutline) },
   { label: '注册码', key: '/admin/reg-codes', icon: renderIcon(KeyOutline) },
   { label: 'API Token', key: '/admin/api-tokens', icon: renderIcon(KeyOutline) },
+  { label: '登录设备', key: '/admin/sessions', icon: renderIcon(DevicesOutline) },
 ]
 const adminNodeItems: MenuOption[] = [
   { label: '节点管理', key: '/admin/nodes', icon: renderIcon(ServerOutline) },
@@ -189,7 +190,7 @@ const titleMap: Record<string, string> = {
   '/orders': '订单记录', '/points': '积分明细', '/notices': '公告通知', '/help': '帮助中心', '/account': '账户设置',
   '/admin': '管理概览', '/admin/users': '用户管理', '/admin/user-groups': '用户组', '/admin/packages': '套餐管理', '/admin/nodes': '节点管理',
   '/admin/singbox': 'sing-box', '/admin/certs': '证书管理', '/admin/orders': '订单管理', '/admin/servers': '服务器', '/admin/monitor': '监控管理',
-  '/admin/settings': '系统设置', '/admin/reg-codes': '注册码', '/admin/api-tokens': 'API Token', '/admin/announcements': '公告管理', '/admin/manual-notifications': '手动通知', '/admin/help': '帮助文档',
+  '/admin/settings': '系统设置', '/admin/reg-codes': '注册码', '/admin/api-tokens': 'API Token', '/admin/sessions': '登录设备', '/admin/announcements': '公告管理', '/admin/manual-notifications': '手动通知', '/admin/help': '帮助文档',
   '/admin/update': '在线更新',
 }
 const currentTitle = computed(() => titleMap[route.path] || config.config.site_name || '亲友团')

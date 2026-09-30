@@ -41,6 +41,8 @@ type ConfigStore interface {
 	BuildSingboxConfig(base, v2rayListen string, usersByTag map[string][]singbox.User) ([]byte, error)
 	BuildSingboxConfigForServer(serverID int64, base, v2rayListen string, usersByTag map[string][]singbox.User) ([]byte, error)
 	AddUsageBatchesByServer(sources map[int64]map[string]store.UsageDelta) (int, error)
+	AddProtocolUsage(byProto map[string]map[string]store.UsageDelta) error
+	GetSbInboundByTag(tag string) (*store.SbInbound, error)
 	ListServers() ([]*store.Server, error)
 	GetServer(id int64) (*store.Server, error)
 	// The capability probe already runs `sing-box version` on every node; these
@@ -57,6 +59,7 @@ type Applier interface {
 // StatsFetcher reads per-user traffic deltas (satisfied by *sbstats.Client).
 type StatsFetcher interface {
 	QueryUserTraffic(ctx context.Context) (map[string]*sbstats.Traffic, error)
+	QueryUserTrafficByInbound(ctx context.Context) (map[string]map[string]*sbstats.Traffic, error)
 }
 
 // remoteManager keeps the SSH boundary testable without opening real sessions.
@@ -949,6 +952,39 @@ func (c *Controller) CollectStats(ctx context.Context) (int, error) {
 	n, err := c.st.AddUsageBatchesByServer(sources)
 	if err != nil {
 		errs = append(errs, err)
+	}
+
+	// Best-effort per-protocol accounting (separate from billing): read local
+	// sing-box per-inbound stats and accumulate how much of each user's traffic
+	// came through each protocol. Failures here are logged only — they never
+	// disturb the billing meter above, and if this sing-box doesn't expose the
+	// inbound>>>user>>> namespace, it simply stays empty. Local node only; remote
+	// nodes would need their own per-inbound poll.
+	if pi, perr := c.stats.QueryUserTrafficByInbound(ctx); perr == nil && len(pi) > 0 {
+		byProto := map[string]map[string]store.UsageDelta{}
+		for tag, users := range pi {
+			proto := "other"
+			if ib, _ := c.st.GetSbInboundByTag(tag); ib != nil && ib.Type != "" {
+				proto = ib.Type
+			}
+			m := byProto[proto]
+			if m == nil {
+				m = map[string]store.UsageDelta{}
+				byProto[proto] = m
+			}
+			for user, t := range users {
+				if t.Up == 0 && t.Down == 0 {
+					continue
+				}
+				d := m[user]
+				d.Up += t.Up
+				d.Down += t.Down
+				m[user] = d
+			}
+		}
+		if aerr := c.st.AddProtocolUsage(byProto); aerr != nil {
+			errs = append(errs, fmt.Errorf("protocol usage: %w", aerr))
+		}
 	}
 	return n, errors.Join(errs...)
 }

@@ -26,6 +26,8 @@ func (schedFakeStore) BuildSingboxConfigForServer(int64, string, string, map[str
 func (schedFakeStore) AddUsageBatchesByServer(map[int64]map[string]store.UsageDelta) (int, error) {
 	return 0, nil
 }
+func (schedFakeStore) AddProtocolUsage(map[string]map[string]store.UsageDelta) error { return nil }
+func (schedFakeStore) GetSbInboundByTag(string) (*store.SbInbound, error)            { return nil, nil }
 func (schedFakeStore) ListServers() ([]*store.Server, error)   { return nil, nil }
 func (schedFakeStore) GetServer(int64) (*store.Server, error)  { return nil, nil }
 func (schedFakeStore) SetNodeSingbox(int64, sbver.Info) error  { return nil }

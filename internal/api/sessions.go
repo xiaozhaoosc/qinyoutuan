@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -39,4 +40,51 @@ func (a *API) handleUserRevokeSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ok(w, nil)
+}
+
+// handleAdminSessions lists every user's login sessions (the admin global device
+// view). Online is marked by token-TTL: a session whose token hasn't expired is
+// "当前在线", otherwise it's historical ("登录过").
+func (a *API) handleAdminSessions(w http.ResponseWriter, r *http.Request) {
+	list, err := a.st.ListAllSessions()
+	if err != nil {
+		fail(w, http.StatusInternalServerError, "读取登录设备失败")
+		return
+	}
+	minCreated := time.Now().Unix() - int64(tokenTTL/time.Second)
+	for i := range list {
+		list[i].Online = list[i].CreatedAt >= minCreated
+	}
+	ok(w, list)
+}
+
+// handleAdminRevokeSession force-logs out a session of any user (admin action).
+func (a *API) handleAdminRevokeSession(w http.ResponseWriter, r *http.Request) {
+	id := atoi(chi.URLParam(r, "id"))
+	if id <= 0 {
+		fail(w, http.StatusBadRequest, "无效的会话 id")
+		return
+	}
+	if err := a.st.DeleteSessionByID(id); err != nil {
+		fail(w, http.StatusInternalServerError, "注销失败")
+		return
+	}
+	ok(w, nil)
+}
+
+// handleAdminProtocolUsage returns per-account per-protocol cumulative traffic
+// (e.g. vless / hysteria2). user_id is optional; omitted = all users.
+func (a *API) handleAdminProtocolUsage(w http.ResponseWriter, r *http.Request) {
+	var uid int64
+	if v := r.URL.Query().Get("user_id"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+			uid = n
+		}
+	}
+	list, err := a.st.ListProtocolUsage(uid)
+	if err != nil {
+		fail(w, http.StatusInternalServerError, "读取协议用量失败")
+		return
+	}
+	ok(w, list)
 }

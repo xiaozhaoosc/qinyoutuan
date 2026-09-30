@@ -470,6 +470,11 @@ func (a *API) Router() http.Handler {
 		ar.Get("/api/admin/manual-notifications", a.handleAdminListManualNotifications)
 		ar.Post("/api/admin/manual-notifications", a.handleAdminCreateManualNotification)
 		ar.Get("/api/admin/manual-notifications/{id}", a.handleAdminManualNotificationDetail)
+
+		// global login devices (admin device list) + per-user protocol usage
+		ar.Get("/api/admin/sessions", a.handleAdminSessions)
+		ar.Post("/api/admin/sessions/{id}/revoke", a.handleAdminRevokeSession)
+		ar.Get("/api/admin/protocol-usage", a.handleAdminProtocolUsage)
 	})
 
 	// sing-box one-click install script. Registered explicitly above the SPA

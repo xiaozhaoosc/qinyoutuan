@@ -189,6 +189,80 @@ func (c *Client) QueryUserTraffic(ctx context.Context) (map[string]*Traffic, err
 	return out, nil
 }
 
+// QueryUserTrafficByInbound returns per-inbound per-user up/down deltas since the
+// previous call (reset=true). Keys: inbound tag → user name → traffic. Used by
+// the best-effort per-protocol accounting pass; distinct from QueryUserTraffic
+// (aggregated user totals) and queried against its own stat namespace, so it does
+// not disturb billing counters.
+func (c *Client) QueryUserTrafficByInbound(ctx context.Context) (map[string]map[string]*Traffic, error) {
+	// Request: patterns=["inbound>>>"], reset=true → per-inbound user counters.
+	req := encodeQueryRequest("inbound>>>", true)
+	frame := frameMessage(req)
+
+	url := "http://" + c.addr + fullMethod
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(frame))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("content-type", "application/grpc")
+	httpReq.Header.Set("te", "trailers")
+
+	resp, err := c.hc.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("stats HTTP %d", resp.StatusCode)
+	}
+	const maxStatsBytes = 16 << 20
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxStatsBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(body) > maxStatsBytes {
+		return nil, fmt.Errorf("stats response exceeds 16 MiB")
+	}
+	if st := resp.Trailer.Get("grpc-status"); st != "" && st != "0" {
+		return nil, fmt.Errorf("grpc-status %s: %s", st, resp.Trailer.Get("grpc-message"))
+	}
+	msg, err := unframeMessage(body)
+	if err != nil {
+		return nil, err
+	}
+	stats, err := decodeQueryResponse(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	out := map[string]map[string]*Traffic{}
+	for name, val := range stats {
+		// name = inbound>>>TAG>>>user>>>NAME>>>traffic>>>uplink|downlink
+		parts := splitName(name)
+		if len(parts) != 6 || parts[0] != "inbound" || parts[2] != "user" || parts[4] != "traffic" {
+			continue
+		}
+		tag := parts[1]
+		users := out[tag]
+		if users == nil {
+			users = map[string]*Traffic{}
+			out[tag] = users
+		}
+		t := users[parts[3]]
+		if t == nil {
+			t = &Traffic{}
+			users[parts[3]] = t
+		}
+		switch parts[5] {
+		case "uplink":
+			t.Up += val
+		case "downlink":
+			t.Down += val
+		}
+	}
+	return out, nil
+}
+
 // splitName splits a v2ray stat name on the ">>>" separator.
 func splitName(name string) []string { return strings.Split(name, ">>>") }
 
