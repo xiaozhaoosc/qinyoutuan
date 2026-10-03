@@ -25,6 +25,9 @@ Wants=network-online.target
 Type=simple
 User=root
 EnvironmentFile=/etc/qinyoutuan.env
+# 加固：启动前清掉游离的 qinyoutuan 进程（nohup 遗留、脱离 systemd 管理但占着
+# 8081，会导致本单元 bind 失败无限重启）。脚本用 cgroup 区分，不误杀托管实例。
+ExecStartPre=/usr/local/bin/qz-clear-stray-qinyoutuan.sh
 ExecStart=/home/ubuntu/qinyoutuan
 Restart=always
 RestartSec=5

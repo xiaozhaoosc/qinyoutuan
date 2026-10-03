@@ -2,6 +2,8 @@
 # 安装看门狗：把 qz-watchdog.sh 放入 /usr/local/bin，创建 systemd service + 每小时 timer。
 set -e
 sudo install -m 755 ./qz-watchdog.sh /usr/local/bin/qz-watchdog.sh
+# 游离进程清理脚本：qinyoutuan.service 的 ExecStartPre 与看门狗 restart 前共用
+sudo install -m 755 ./qz-clear-stray-qinyoutuan.sh /usr/local/bin/qz-clear-stray-qinyoutuan.sh
 
 sudo tee /etc/systemd/system/qz-watchdog.service > /dev/null <<'UNIT'
 [Unit]

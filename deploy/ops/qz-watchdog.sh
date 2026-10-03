@@ -25,6 +25,24 @@ check() {
   local t="$(date '+%Y-%m-%d %H:%M:%S')"
   log "service $svc DOWN, restarting"
   send "服务器异常：${svc} 服务中止，请关注 IP：${IP}, 时间：${t}"
+  # 加固：restart 前先清游离进程（历史上 nohup 遗留的 qinyoutuan 占着 8081，
+  # 导致 systemd 实例 bind 失败无限重启；见 qz-clear-stray-qinyoutuan.sh）。
+  if [ "$svc" = "qinyoutuan" ]; then
+    if [ -x /usr/local/bin/qz-clear-stray-qinyoutuan.sh ]; then
+      /usr/local/bin/qz-clear-stray-qinyoutuan.sh 2>>"$LOG" || true
+    else
+      # 兜底：cgroup 非 qinyoutuan.service、exe 为面板二进制的进程全清
+      for pid in /proc/[0-9]*; do
+        p="${pid#/proc/}"
+        grep -q 'qinyoutuan\.service' "/proc/$p/cgroup" 2>/dev/null && continue
+        exe="$(readlink -f "/proc/$p/exe" 2>/dev/null)" || continue
+        [ "$exe" = "/home/ubuntu/qinyoutuan" ] || continue
+        log "watchdog killing stray qinyoutuan pid=$p"
+        kill -9 "$p" 2>/dev/null || true
+      done
+      sleep 2
+    fi
+  fi
   systemctl restart "$svc" 2>>"$LOG" || true
   sleep 3
   if systemctl is-active --quiet "$svc"; then
