@@ -117,6 +117,19 @@ func TestCloudflaredServiceUnit(t *testing.T) {
 	}
 }
 
+// fixed 模式单元不得携带 --logfile：cloudflared 2026.9+ 的 `tunnel run` 子命令
+// 不接受该参数，带上了会导致服务无限重启（打印 help 后退出）。
+func TestCloudflaredServiceUnitFixedNoLogfile(t *testing.T) {
+	u := CloudflaredServiceUnit("/usr/local/bin/cloudflared", "/etc/cloudflared/t.log",
+		ArgoSpec{Mode: "fixed", Auth: "tok", Domain: "t.example.com"})
+	if strings.Contains(u, "--logfile") {
+		t.Fatalf("fixed unit must not carry --logfile (tunnel run rejects it):\n%s", u)
+	}
+	if !strings.Contains(u, "run --token tok") {
+		t.Fatalf("fixed unit missing run --token:\n%s", u)
+	}
+}
+
 func TestQuoteWorld(t *testing.T) {
 	got := quoteWorld([]string{"run", "--token", "has space", "plain"})
 	if !strings.Contains(got, `--token "has space"`) {

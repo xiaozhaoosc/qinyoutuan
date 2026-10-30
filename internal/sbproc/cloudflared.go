@@ -261,7 +261,10 @@ func quoteWorld(args []string) string {
 // tunnel needs nothing privileged.
 func CloudflaredServiceUnit(bin, logfile string, s ArgoSpec) string {
 	args, _ := ArgoArgs(s) // unit is only rendered for an enabled spec
-	if logfile != "" {
+	// `tunnel run`（fixed 模式）在 cloudflared 2026.9+ 上拒绝 --logfile（"flag
+	// provided but not defined"），且 fixed 的域名来自 stored Domain、无需解析
+	// 日志；只有 temporary 快速隧道需要从 logfile 提取 trycloudflare 域名。
+	if logfile != "" && s.Mode == "temporary" {
 		args = append(args, "--logfile", logfile)
 	}
 	var desc string
